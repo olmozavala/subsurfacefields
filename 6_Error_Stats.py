@@ -9,7 +9,7 @@ import time
 import trainingutils as utilsNN
 
 from config.MainConfig import get_prediction_params
-from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams
+from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, MAX_LOCATION
 from constants.AI_params import TrainingParams, ModelParams
 from img_viz.common import create_folder
 from img_viz.eoa_viz import EOAImageVisualizer
@@ -19,6 +19,7 @@ import cmocean
 import matplotlib.pyplot as plt
 
 def main():
+    """This program makes the predictions for the """
 
     config = get_prediction_params()
 
@@ -35,12 +36,12 @@ def main():
         hid_layer_size = int(split_name[3])
         RAND_LOC = int(split_name[1])
         seed = int(split_name[9])
-        MAX_LOCATION = 500   # How many locations can we test
         np.random.seed(seed)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
         if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
             locations = range(RAND_LOC)
         else:
-            locations = np.random.randint(0, MAX_LOCATION, RAND_LOC)
+            # locations = np.random.randint(0, MAX_LOCATION, RAND_LOC)
+            locations = range(RAND_LOC)
         config[ProjTrainingParams.locations] = locations
         config[ModelParams.HIDDEN_LAYERS] = hid_layers
         config[ModelParams.CELLS_PER_HIDDEN_LAYER] = [hid_layer_size for x in range(hid_layers) ]
@@ -55,6 +56,11 @@ def main():
         test_model(config)
 
 def test_model(config):
+    """
+    This function tests a single model with the test dataset
+    :param config:
+    :return:
+    """
     input_folder_preproc = config[ProjTrainingParams.input_folder_preproc]
     output_folder = config[PredictionParams.output_folder]
     model_weights_file = config[PredictionParams.model_weights_file]

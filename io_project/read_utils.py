@@ -15,7 +15,7 @@ def get_all_profiles(input_folder, all_loc, time_steps=range(216)):
     """
     This function reads all the requested locations and generates arrays separated by dates.
     :param input_folder: Where the profile files are stored (the ones splitted by locations)
-    :param all_loc: An array of integers indidcating the number of the locations
+    :param all_loc: An array of integers indicating the number of the locations
     :return: Each output array should contain 216 time steps
     """
 
@@ -50,6 +50,13 @@ def get_all_profiles(input_folder, all_loc, time_steps=range(216)):
 
 
 def get_profiles_byloc(input_folder, loc_prof, time_steps):
+    """
+    It reads the information for one specific location
+    :param input_folder:
+    :param loc_prof:
+    :param time_steps:
+    :return:
+    """
     loc_files = os.listdir(input_folder)
     loc_files = [x for x in loc_files if x.find(F"{loc_prof:04}") != -1]
     loc_files.sort()
@@ -70,7 +77,7 @@ def get_profiles_byloc(input_folder, loc_prof, time_steps):
     # Iterate for each selected year
     for i in years_to_read:
         c_file = loc_files[i]
-        ds = xr.load_dataset(join(input_folder, c_file))
+        ds = xr.open_dataset(join(input_folder, c_file))
         if i == years_to_read[0]:  # Because the depths for this profile are always the same we store it only once
             depth = list(ds.depth)
             latlon = np.array([ds.lat_nn.values[0], ds.lon_nn.values[0]])

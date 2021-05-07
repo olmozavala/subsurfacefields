@@ -14,7 +14,7 @@ import numpy as np
 
 import pandas as pd
 from config.MainConfig import get_prediction_params
-from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams
+from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, MAX_LOCATION
 from constants.AI_params import TrainingParams, ModelParams
 from img_viz.common import create_folder
 
@@ -30,8 +30,8 @@ config = get_prediction_params()
 # -------- Read the summary file (with all the models already trained) --------------
 summary_file = "/data/SubsurfaceFields/Output/SUMMARY/summary.csv"
 df = pd.read_csv(summary_file)
-model = df.iloc[9]  # Here we identify which model we want to use
-port = 8089
+model = df.iloc[0]  # Here we identify which model we want to use
+port = 8080
 
 # Setting Network type (only when network type is UNET)
 name = model["Name"]
@@ -40,12 +40,12 @@ hid_layers = int(split_name[5])
 hid_layer_size = int(split_name[3])
 RAND_LOC = int(split_name[1])
 seed = int(split_name[9])
-MAX_LOCATION = 500   # How many locations can we test
 np.random.seed(seed)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
 if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
     locations = range(RAND_LOC)
 else:
-    locations = np.random.randint(0, MAX_LOCATION, RAND_LOC)
+    # locations = np.random.randint(0, MAX_LOCATION, RAND_LOC)
+    locations = range(RAND_LOC)
 config[ProjTrainingParams.locations] = locations
 config[ModelParams.HIDDEN_LAYERS] = hid_layers
 config[ModelParams.CELLS_PER_HIDDEN_LAYER] = [hid_layer_size for x in range(hid_layers) ]
@@ -66,13 +66,14 @@ val_perc = config[TrainingParams.validation_percentage]
 test_perc = config[TrainingParams.test_percentage]
 stats_input_file = config[ProjTrainingParams.stats_file]
 locations = config[ProjTrainingParams.locations]
+years = config[ProjTrainingParams.years]
 tot_loc = len(locations)
 
 output_imgs_folder = join(output_imgs_folder, run_name)
 create_folder(output_imgs_folder)
 
 # *********** Read files to predict***********
-[train_ids, val_ids, test_ids] = utilsNN.split_train_validation_and_test(216,
+[train_ids, val_ids, test_ids] = utilsNN.split_train_validation_and_test(int(36*years),
                                                                          val_percentage=val_perc,
                                                                          test_percentage=test_perc,
                                                                          shuffle_ids=False)
@@ -121,17 +122,18 @@ def getMap(selected_idx):
         data=mydata,
         layout=dict(
             mapbox=dict(
-                # center=dict(
-                #     lat=38.72490, lon=-95.61446
-                # ),
+                center=dict(
+                    lat=24, lon=-87
+                ),
                 style='open-street-map',
                 # open-street-map, white-bg, carto-positron, carto-darkmatter,
                 # stamen-terrain, stamen-toner, stamen-watercolor
                 pitch=0,
-                zoom=1,
-                height=600
+                # zoom=1,
+                zoom=4,
             ),
-            autosize=True,
+            height=800
+            # autosize=True,
         )
     )
     return fig
@@ -172,7 +174,7 @@ app.layout = dbc.Container([
             dbc.Col( ["Maximum depth to show:", dcc.Dropdown(
                 id='depth-selection',
                 options=[{'label': F"{x} mts", 'value': i} for i, x in enumerate(depths_int)],
-                value=45)], width=2),
+                value=40)], width=2),
             dbc.Col( ["Day of year:", dcc.Slider(
                 id='day-selection',
                 min=0,
@@ -239,6 +241,5 @@ def display_hover_data(map_data, depth_id, day_year):
 #     return json.dumps(selectedData, indent=2)
 
 if __name__ == '__main__':
-    # app.run_server(debug=True)
-    app.run_server(debug=False, port=port, host='146.201.212.115')
-
+    app.run_server(debug=True)
+    # app.run_server(debug=False, port=port, host='146.201.212.115')

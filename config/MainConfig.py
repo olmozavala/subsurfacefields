@@ -12,8 +12,7 @@ from constants.AI_params import TrainingParams, ModelParams, AiModels
 from img_viz.constants import PlotMode
 
 # ----------------------------- UM -----------------------------------
-
-_preproc_folder = "/data/SubsurfaceFields/Preproc"
+_preproc_folder = "/data/SubsurfaceFields/PreprocGoM"
 _output_folder = "/data/SubsurfaceFields/Output"  # Where to save everything
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Decide which GPU to use to execute the code
@@ -21,8 +20,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Decide which GPU to use to execute t
 tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2000)
 
 NORMALIZE = False
-MAX_LOCATION = 500   # How many locations can we test (how many have been preprocessed)
-RAND_LOC = 1 # How many random locations to use
+RAND_LOC = 100 # How many random locations to use
 DEPTH_SIZE = 78
 # How big is the hidden layers are limitted by around ~1170 for the GPU
 HID_LAY_SIZE = int(DEPTH_SIZE*min(RAND_LOC,15))
@@ -30,7 +28,7 @@ HID_LAYERS = 3  # Number of hidden layers
 
 SEED = 0
 np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
-_run_name = F"Loc_{RAND_LOC}_hidcells_{HID_LAY_SIZE}_hidlay_{HID_LAYERS}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}"
+_run_name = F"GoMLoc_{RAND_LOC}_hidcells_{HID_LAY_SIZE}_hidlay_{HID_LAYERS}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}"
 
 if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
     LOCATIONS = range(RAND_LOC)
@@ -39,12 +37,15 @@ else:
 
 def get_preproc_config():
     model_config = {
-        # PreprocParams.input_folder_raw: "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile",
-        PreprocParams.input_folder_raw: "/data/SubsurfaceFields/Input",
+        PreprocParams.input_folder_raw: "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile",
+        # PreprocParams.input_folder_raw: "/data/SubsurfaceFields/Input",
         PreprocParams.imgs_output_folder: join(_preproc_folder, "imgs"),
         PreprocParams.output_folder: _preproc_folder,
-        ProjTrainingParams.locations: LOCATIONS,
-        ProjTrainingParams.tot_depths: DEPTH_SIZE
+        ProjTrainingParams.locations: MAX_LOCATION,
+        ProjTrainingParams.tot_depths: DEPTH_SIZE,
+        # ProjTrainingParams.bbox: [18.09165, 31.9267, -98, -76.40002]  # Min max lat and min max lon
+        ProjTrainingParams.bbox: [18.09165, 31.9267, 360-98, 360-76.40002]  # Min max lat and min max lon
+        # ProjTrainingParams.bbox: [24.0, 35.0, 360-102, 360-94]  # Min max lat and min max lon
     }
     return model_config
 
@@ -87,6 +88,7 @@ def get_training_2d():
         ProjTrainingParams.output_folder: join(_output_folder, "images"),
         ProjTrainingParams.output_folder_summary_models:  F"{join(_output_folder,'SUMMARY')}",
         ProjTrainingParams.locations: LOCATIONS,
+        ProjTrainingParams.years: 6,
         ProjTrainingParams.stats_file: join(_preproc_folder, "MEAN_STD_by_loc.csv")
     }
     return append_model_params(cur_config)

@@ -37,7 +37,7 @@ def plotSparseDataFiles(file_names, input_folder, output_folder, file_prefix="")
     # Plotting type1 file ( sparse )
     c_file = file_names[0]
     print(F"Reading file {c_file}....")
-    ds = xr.load_dataset(join(input_folder, c_file))
+    ds = xr.open_dataset(join(input_folder, c_file))
     data_summary(ds)
     tot_prof = len(ds['lat_nn']) # Total number of profiles
 
@@ -95,7 +95,7 @@ def plot5DegDataFiles(file_names, input_folder, output_folder, file_prefix=""):
     # Plotting type1 file ( sparse )
     c_file = file_names[0]
     print(F"Reading file {c_file}....")
-    ds = xr.load_dataset(join(input_folder, c_file))
+    ds = xr.open_dataset(join(input_folder, c_file))
     # data_summary(ds)
     # TODO we are going to plot a single day
     tot_prof = ds.ssh.shape[0]

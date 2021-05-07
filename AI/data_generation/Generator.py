@@ -35,6 +35,7 @@ def data_gen_from_preproc(config, ssh, temp_profile, saln_profile, depths, years
                 c_id = ids[ex_id]
                 try:
                     tx = np.concatenate((ssh[c_id, :].flatten(), temp_profile[c_id,:,0].flatten(), [np.sin(dyear[c_id]*np.pi/365)]))
+                    # tx = np.concatenate((ssh[c_id, :].flatten(), temp_profile[c_id,:,0].flatten(), [0]))
                     ty = np.concatenate((temp_profile[c_id,:,:].flatten(), saln_profile[c_id,:,:].flatten()))
                     # Just for debugging
                     # t = temp_profile[c_id,:,:][0]

@@ -1,12 +1,13 @@
 from enum import Enum
 
+MAX_LOCATION = 637   # How many locations can we test (how many have been preprocessed)
+
 class PreprocParams(Enum):
     input_folder_raw = 3  # Input folder where the observations output is
     output_folder = 4  # Where to output the data
     imgs_output_folder = 40  # Where to output the imgs
     zero_one = 13
     mean_var = 14
-
 
 class ParallelParams(Enum):
     NUM_PROC = 1
@@ -21,6 +22,8 @@ class ProjTrainingParams(Enum):
     tot_depths = 7
     stats_file = 8
     normalize = 9
+    bbox = 10
+    years = 11  # How many years do we want to use in the experiment
 
 class PredictionParams(Enum):
     input_folder = 1  # Where the images are stored
