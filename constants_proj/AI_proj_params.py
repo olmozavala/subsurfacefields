@@ -1,6 +1,7 @@
 from enum import Enum
 
 MAX_LOCATION = 637   # How many locations can we test (how many have been preprocessed)
+SEED = 0 # How many locations can we test (how many have been preprocessed)
 
 class PreprocParams(Enum):
     input_folder_raw = 3  # Input folder where the observations output is

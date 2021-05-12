@@ -19,7 +19,9 @@ def main():
     # p = Pool(NUM_PROC)
     # p.map(PreprocDataRandomSubsample(), range(NUM_PROC))
     # PreprocDataRandomSubsample(0)
-    PreprocDataBBOXSubsample(0)
+    # PreprocDataBBOXSubsample(0)
+    computeMeanSTD()
+
 
 def PreprocDataBBOXSubsample(proc_id):
     """
@@ -59,6 +61,7 @@ def PreprocDataBBOXSubsample(proc_id):
 
     # print(F"Selected loc: \n {lats} \n {lons}")
     generalPreproc(lats, lons, tot_loc, n_depths, five_deg_files, input_folder, output_folder)
+
 
 def PreprocDataRandomSubsample(proc_id):
     """
@@ -138,10 +141,7 @@ def generalPreproc(lats, lons, n_loc, n_depths, file_names, input_folder, output
     """
     # ==================== FROM THE SELECTED RANDOM LOCATIONS CREATE THE NEW FILES ====================
     # Iterate in each year file and look for the selected locations
-    loc_std_temp = np.full((n_loc, n_depths), np.nan)
-    loc_mean_temp = np.full((n_loc, n_depths), np.nan)
-    loc_std_saln = np.full((n_loc, n_depths), np.nan)
-    loc_mean_saln = np.full((n_loc, n_depths), np.nan)
+
     create_folder(output_folder)
 
     tot_time_steps = -1
@@ -171,11 +171,8 @@ def generalPreproc(lats, lons, n_loc, n_depths, file_names, input_folder, output
             if i == 0: # Only for the first file we save the final latitudes and longitudes
                 f_lats.append(lats[c_loc])
                 f_lons.append(lons[c_loc])
-                loc_mean_saln[selected_loc, :] = np.sum(subds.saln_level.values, axis=0)/tot_time_steps
-                loc_mean_temp[selected_loc, :] = np.sum(subds.temp_level.values, axis=0)/tot_time_steps
-            else:
-                loc_mean_saln[selected_loc, :] += np.sum(subds.saln_level.values, axis=0)/tot_time_steps
-                loc_mean_temp[selected_loc, :] += np.sum(subds.temp_level.values, axis=0)/tot_time_steps
+
+            # saving the mean
             output_file = join(output_folder,F"{int(year.values)}_loc_{selected_loc:04}.nc")
             print(F"Saving file {output_file}")
             subds.to_netcdf(output_file)
@@ -192,36 +189,62 @@ def generalPreproc(lats, lons, n_loc, n_depths, file_names, input_folder, output
     # for j in range(n_loc):
     #     draw_profile(loc_mean_temp[j,:], loc_mean_saln[j,:], ds.depth, "delete", join(out_img_folder,F"{j:04}_MeanProfile.png"))
 
+
+def computeMeanSTD():
+    """
+    It computes the mean and STD for all the locations stored in the specified folder
+    :param input_folder:
+    :return:
+    """
+    config = get_preproc_config()
+    input_folder = config[PreprocParams.output_folder]
+    n_depths = config[ProjTrainingParams.tot_depths]
     # Computing STD
+    file_names = os.listdir(input_folder)
+    first_year = int(file_names[0][0:4])
+    n_loc = len([x for x in file_names if x.find(F"{first_year}") != -1])
+    years = int(len(file_names)/n_loc)
+    tot_time_steps = years*36
+
+    loc_std_temp = np.zeros((n_loc, n_depths))
+    loc_mean_temp = np.zeros((n_loc, n_depths))
+    loc_std_saln = np.zeros((n_loc, n_depths))
+    loc_mean_saln = np.zeros((n_loc, n_depths))
+
+    lats = np.zeros(n_loc)
+    lons = np.zeros(n_loc)
+    print("================ MEAN ==================")
+    for c_loc in range(n_loc):
+        print(F"Computing MEAN: {c_loc}/{n_loc}")
+        loc_files = [join(input_folder,x) for x in file_names if x.find(F"{c_loc:04d}") != -1]
+        ds = xr.open_dataset(loc_files[0])
+        lats[c_loc] = ds.lat_nn[0]
+        lons[c_loc] = ds.lon_nn[0]
+        ds.close()
+        for c_file in loc_files:
+            ds = xr.open_dataset(c_file)
+            loc_mean_temp[c_loc, :] += np.sum(ds.temp_level.values, axis=0)/tot_time_steps
+            loc_mean_saln[c_loc, :] += np.sum(ds.saln_level.values, axis=0)/tot_time_steps
+            ds.close()
+
     print("================ STD ==================")
-    for i, c_file in enumerate(file_names):
-        print(F"Preprocessing file {c_file}")
-        ds = xr.open_dataset(join(input_folder, c_file))
-        selected_loc = 0
-        c_loc = 0
-        while selected_loc < n_loc:
-            ids = np.array(np.where(ds['lat_nn'].isin(lats[c_loc]) & ds['lon_nn'].isin(lons[c_loc])))[0]
-            c_loc += 1
-            if len(ids) > 36:
-                print("ERROR it found more coordinates that expected!")
-                continue
-
-            subds = ds.sel(num_profs=ids.squeeze())
-            if (i == 0):
-                loc_std_saln[selected_loc, :] = np.sqrt(np.sum((subds.saln_level.values - loc_mean_saln[selected_loc][:])**2, axis=0)/tot_time_steps)
-                loc_std_temp[selected_loc, :] = np.sqrt(np.sum((subds.temp_level.values - loc_mean_temp[selected_loc][:])**2, axis=0)/tot_time_steps)
+    for c_loc in range(n_loc):
+        print(F"Computing STD: {c_loc}/{n_loc}")
+        loc_files = [join(input_folder,x) for x in file_names if x.find(F"{c_loc:04d}") != -1]
+        for c_file in loc_files:
+            ds = xr.open_dataset(c_file)
+            if (c_loc == 0):
+                loc_std_saln[c_loc, :] = np.sqrt(np.sum((ds.saln_level.values - loc_mean_saln[c_loc][:])**2, axis=0)/tot_time_steps)
+                loc_std_temp[c_loc, :] = np.sqrt(np.sum((ds.temp_level.values - loc_mean_temp[c_loc][:])**2, axis=0)/tot_time_steps)
             else:
-                loc_std_saln[selected_loc, :] += np.sqrt(np.sum((subds.saln_level.values - loc_mean_saln[selected_loc][:])**2, axis=0)/tot_time_steps)
-                loc_std_temp[selected_loc, :] += np.sqrt(np.sum((subds.temp_level.values - loc_mean_temp[selected_loc][:])**2, axis=0)/tot_time_steps)
-            selected_loc += 1
+                loc_std_saln[c_loc, :] += np.sqrt(np.sum((ds.saln_level.values - loc_mean_saln[c_loc][:])**2, axis=0)/tot_time_steps)
+                loc_std_temp[c_loc, :] += np.sqrt(np.sum((ds.temp_level.values - loc_mean_temp[c_loc][:])**2, axis=0)/tot_time_steps)
+            ds.close()
 
-    # for j in range(n_loc):
-    #     draw_profile(loc_std_temp[j,:], loc_std_saln[j,:], ds.depth, "delete", join(out_img_folder,F"{j:04}_STDProfile.png"))
-
-    df = pd.DataFrame({'locations':range(n_loc), 'lats': f_lats, 'lons':f_lons,
+    df = pd.DataFrame({'locations':range(n_loc), 'lats': lats, 'lons':lons,
                        'mean_saln':[x for x in loc_mean_saln], 'mean_temp':[x for x in loc_mean_temp],
                        'std_saln':[x for x in loc_std_saln], 'std_temp':[x for x in loc_std_temp]})
-    df.to_csv(join(output_folder, "MEAN_STD_by_loc.csv"))
+    df.to_csv(join(input_folder, "MEAN_STD_by_loc.csv"))
 
 if __name__ == '__main__':
     main()

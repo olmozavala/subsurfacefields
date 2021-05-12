@@ -3,7 +3,7 @@ from datetime import datetime
 from config.MainConfig import get_training_2d
 from AI.data_generation.Generator import data_gen_from_preproc
 
-from constants_proj.AI_proj_params import ProjTrainingParams, MAX_LOCATION
+from constants_proj.AI_proj_params import ProjTrainingParams, MAX_LOCATION, SEED
 import trainingutils as utilsNN
 from models.modelSelector import select_1d_model
 from models_proj.models import *
@@ -37,7 +37,11 @@ def doTraining(conf):
     years = config[ProjTrainingParams.years]
     locations = config[ProjTrainingParams.locations]
 
-    output_folder = join(output_folder, run_name)
+    print("Selecting and generating the model....")
+    now = datetime.utcnow().strftime("%Y_%m_%d_%H_%M")
+    model_name = F'{run_name}_{now}'
+
+    output_folder = join(output_folder, model_name)
     split_info_folder = join(output_folder, 'Splits')
     parameters_folder = join(output_folder, 'Parameters')
     weights_folder = join(output_folder, 'models')
@@ -47,20 +51,18 @@ def doTraining(conf):
     create_folder(weights_folder)
     create_folder(logs_folder)
 
-    print("Selecting and generating the model....")
-    now = datetime.utcnow().strftime("%Y_%m_%d_%H_%M")
-    model_name = F'{run_name}_{now}'
-
     file_name_loc = join(split_info_folder, F'Locations_{model_name}.txt')
     pd.DataFrame(np.array(locations)).to_csv(file_name_loc, header=None)
 
     # Each array has date as its first index and location as its second index
+    total_timesteps = int(years*36)
     print("Reading all data...")
-    ssh, temp_profile, saln_profile, years, dyear, depths, latlons = get_all_profiles(input_folder_preproc, locations, time_steps=range(int(years*36)))
+    ssh, temp_profile, saln_profile, years, dyear, depths, latlons = get_all_profiles(input_folder_preproc, locations, time_steps=range(total_timesteps))
     print("Done!")
 
     # ================ Split definition =================
-    [train_ids, val_ids, test_ids] = utilsNN.split_train_validation_and_test(ssh.shape[0],
+    np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
+    [train_ids, val_ids, test_ids] = utilsNN.split_train_validation_and_test(total_timesteps,
                                                                              val_percentage=val_perc,
                                                                              test_percentage=test_perc,
                                                                              shuffle_ids=False)
@@ -127,25 +129,23 @@ if __name__ == '__main__':
     # exit(1)
 
     # ======================= Multiple training =======================
-    normalize = [False]
-    rand_loc = [10]
+    normalize = [True, False]
+    rand_loc = [10, 20, 50, 100, 200, 400]
     DEPTH_SIZE = 78
     hid_layers = 3  # Number of hidden layers
-    SEED = 0
 
     for RAND_LOC in rand_loc:
         for NORMALIZE in normalize:
             # How big is the hidden layers are limitted by around ~1170 for the GPU
-            hid_lay_size = int(DEPTH_SIZE*min(RAND_LOC,15))
+            hid_lay_size = int(DEPTH_SIZE*min(RAND_LOC, 15))
             np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
-            _run_name = F"GoMLoc_{RAND_LOC:02d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_ZERO_InputDate"
+            _run_name = F"GoMLoc_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
             output_size = RAND_LOC*DEPTH_SIZE*2  # We want to output all the profiles depths for temperature and salinity
 
             if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
                 LOCATIONS = range(RAND_LOC)
             else:
-                # LOCATIONS = np.random.randint(0, MAX_LOCATION, RAND_LOC)
-                LOCATIONS = range(RAND_LOC)
+                LOCATIONS = np.random.choice( range(MAX_LOCATION), RAND_LOC, replace=False)
 
             config[ModelParams.INPUT_SIZE] = RAND_LOC*2 + 1
             config[ProjTrainingParams.locations] = LOCATIONS

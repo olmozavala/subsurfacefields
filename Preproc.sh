@@ -10,4 +10,3 @@ SRC_PATH="/home/olmozavala/Dropbox/MyProjects/EOAS/COAPS/SubsurfaceFields"
 
 echo '############################ Preprocessing ############################ '
 python $SRC_PATH/2_PreprocData.py
-

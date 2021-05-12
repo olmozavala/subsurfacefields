@@ -25,8 +25,8 @@ DEPTH_SIZE = 78
 # How big is the hidden layers are limitted by around ~1170 for the GPU
 HID_LAY_SIZE = int(DEPTH_SIZE*min(RAND_LOC,15))
 HID_LAYERS = 3  # Number of hidden layers
+YEARS = 43
 
-SEED = 0
 np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
 _run_name = F"GoMLoc_{RAND_LOC}_hidcells_{HID_LAY_SIZE}_hidlay_{HID_LAYERS}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}"
 
@@ -78,6 +78,7 @@ def get_training_2d():
         TrainingParams.loss_function: metrics.mse,  # Loss function to use for the learning
 
         TrainingParams.optimizer: Adam(lr=0.001),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
+        # TrainingParams.optimizer: SGD(),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
         TrainingParams.batch_size: 10, # READ In this case it is not a common batch size. It indicates the number of images to read from the same file
         TrainingParams.epochs: 5000,
         TrainingParams.config_name: _run_name,
@@ -88,7 +89,7 @@ def get_training_2d():
         ProjTrainingParams.output_folder: join(_output_folder, "images"),
         ProjTrainingParams.output_folder_summary_models:  F"{join(_output_folder,'SUMMARY')}",
         ProjTrainingParams.locations: LOCATIONS,
-        ProjTrainingParams.years: 6,
+        ProjTrainingParams.years: YEARS,
         ProjTrainingParams.stats_file: join(_preproc_folder, "MEAN_STD_by_loc.csv")
     }
     return append_model_params(cur_config)

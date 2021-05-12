@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import trainingutils as utilsNN
 
 from config.MainConfig import get_prediction_params
-from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, PreprocParams
+from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, PreprocParams, MAX_LOCATION
 from models_proj.models import *
 from constants.AI_params import TrainingParams, ModelParams, AiModels
 from img_viz.common import create_folder
@@ -39,11 +39,11 @@ def main():
         hid_layer_size = int(split_name[3])
         RAND_LOC = int(split_name[1])
         seed = int(split_name[9])
-        MAX_LOCATION = 500   # How many locations can we test
         np.random.seed(seed)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
         if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
             locations = range(RAND_LOC)
         else:
+            # locations = np.random.randint(0, MAX_LOCATION, RAND_LOC)
             locations = np.random.randint(0, MAX_LOCATION, RAND_LOC)
         config[ProjTrainingParams.locations] = locations
         config[ModelParams.HIDDEN_LAYERS] = hid_layers

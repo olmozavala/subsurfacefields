@@ -9,7 +9,7 @@ import time
 import trainingutils as utilsNN
 
 from config.MainConfig import get_prediction_params
-from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, MAX_LOCATION
+from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, MAX_LOCATION, SEED
 from constants.AI_params import TrainingParams, ModelParams
 from img_viz.common import create_folder
 from img_viz.eoa_viz import EOAImageVisualizer
@@ -40,8 +40,8 @@ def main():
         if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
             locations = range(RAND_LOC)
         else:
-            # locations = np.random.randint(0, MAX_LOCATION, RAND_LOC)
-            locations = range(RAND_LOC)
+            locations = np.random.choice( range(MAX_LOCATION), RAND_LOC, replace=False)
+
         config[ProjTrainingParams.locations] = locations
         config[ModelParams.HIDDEN_LAYERS] = hid_layers
         config[ModelParams.CELLS_PER_HIDDEN_LAYER] = [hid_layer_size for x in range(hid_layers) ]
@@ -71,6 +71,7 @@ def test_model(config):
     normalize = config[ProjTrainingParams.normalize]
     stats_input_file = config[ProjTrainingParams.stats_file]
     locations = config[ProjTrainingParams.locations]
+    years = config[ProjTrainingParams.years]
     tot_loc = len(locations)
 
     output_imgs_folder = join(output_imgs_folder, run_name)
@@ -85,17 +86,18 @@ def test_model(config):
     print('Reading weights ....')
     model.load_weights(model_weights_file)
 
-    # *********** Read files to predict***********
-
-    [train_ids, val_ids, test_ids] = utilsNN.split_train_validation_and_test(216,
+    # *********** Get the ***********
+    np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
+    total_timesteps = int(years*36)
+    [train_ids, val_ids, test_ids] = utilsNN.split_train_validation_and_test(total_timesteps,
                                                                              val_percentage=val_perc,
                                                                              test_percentage=test_perc,
                                                                              shuffle_ids=False)
 
     viz_obj = EOAImageVisualizer(disp_images=False, output_folder=output_imgs_folder)
 
+    # *********** Read files to predict***********
     print("Reading all data...")
-    # TODO be able to read just some of the timesteps not all of them
     ssh, temp_profile, saln_profile, years, dyear, depths, latlons = get_all_profiles(input_folder_preproc, locations, test_ids)
     print("Done!")
 
@@ -123,7 +125,7 @@ def test_model(config):
         X = [np.concatenate((ssh[c_date_id, :].flatten(), sst, [np.cos(dyear[c_date_id]*np.pi/365)]))]
         X = np.array(X)
 
-        # Make the prediction of the network
+        # ====================== Make the prediction of the network
         start = time.time()
         output_nn_original = model.predict([X], verbose=1)
         toc = time.time() - start
