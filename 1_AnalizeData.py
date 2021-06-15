@@ -20,15 +20,15 @@ def create_folder(output_folder):
 
 def main():
     # ----------- Parallel -------
-    p = Pool(NUM_PROC)
-    p.map(img_generation_all, range(NUM_PROC))
+    # p = Pool(NUM_PROC)
+    # p.map(img_generation_all, range(NUM_PROC))
+    img_generation_3D(0)
 
 def data_summary(ds):
     print("------------- Data summary ---------------------")
     print(ds.head())
     df = ds.to_dataframe()
     print(df.describe())
-
 
 def plotSparseDataFiles(file_names, input_folder, output_folder, file_prefix=""):
     path = geopd.datasets.get_path('naturalearth_lowres')
@@ -119,6 +119,35 @@ def plot5DegDataFiles(file_names, input_folder, output_folder, file_prefix=""):
     print("\tDone!...")
 
     print("Done!")
+
+def img_generation_3D(proc_id):
+    """
+    Makes images of the available data (Free run, DA and Observations)
+    :param proc_id:
+    :return:
+    """
+    input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile/3d"
+    output_folder = "/data/SubsurfaceFields/PreprocBK/imgs/3d"
+    create_folder(output_folder)
+
+    print("Reading files...")
+    all_files = os.listdir(input_folder)
+
+    w0 = 10000
+    t0 = 5
+    x = np.arange(0, 5,.1)
+    plt.plot(x, np.exp(-x/t0))
+    plt.show()
+    plt.plot(np.exp(np.arange(-10, 10)))
+    plt.show()
+
+    # for c_file in all_files:
+        # ds = xr.open_dataset(join(input_folder, c_file))
+        # ds.ssh[0,:,:].plot(figsize=(10,5))
+        # plt.imshow(ds.ssh[0,:,:].plot)
+        # plt.show()
+        # exit()
+
 
 def img_generation_all(proc_id):
     """
