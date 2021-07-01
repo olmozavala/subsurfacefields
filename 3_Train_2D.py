@@ -1,4 +1,5 @@
 from datetime import datetime
+from proj_metrics import force_monotonic_density_loss
 
 from config.MainConfig import get_training_2d
 from AI.data_generation.Generator import data_gen_from_preproc
@@ -15,8 +16,10 @@ import numpy as np
 import pandas as pd
 import os
 from constants.AI_params import TrainingParams, ModelParams
+import tensorflow as tf
 
 from tensorflow.keras.utils import plot_model
+from metrics_proj.isop_metrics import swstate
 from ExtraUtils.VizUtilsProj import draw_profile
 
 def doTraining(conf):
@@ -59,6 +62,8 @@ def doTraining(conf):
     print("Reading all data...")
     ssh, temp_profile, saln_profile, years, dyear, depths, latlons = get_all_profiles(input_folder_preproc, locations, time_steps=range(total_timesteps))
     print("Done!")
+    # ================ Compute Density for each profile =================
+    # _, density_profile = swstate(saln_profile, temp_profile, depths)
 
     # ================ Split definition =================
     np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
@@ -75,11 +80,6 @@ def doTraining(conf):
     # ******************* Selecting the model **********************
     model = select_1d_model(config)
 
-    # https://www.tensorflow.org/api_docs/python/tf/keras/applications/ResNet50
-    # model = tf.keras.applications.ResNet50(include_top=True, weights='imagenet',
-    #                                        input_shape=config[ModelParams.INPUT_SIZE],
-    #                                        pooling=max, classes=4)
-
     plot_model(model, to_file=join(output_folder,F'{model_name}.png'), show_shapes=True)
 
     print("Saving split information...")
@@ -88,6 +88,7 @@ def doTraining(conf):
 
 
     print("Compiling model ...")
+    # model.run_eagerly = True
     model.compile(loss=loss_func, optimizer=optimizer, metrics=eval_metrics)
 
     print("Getting callbacks ...")
@@ -103,7 +104,7 @@ def doTraining(conf):
         # tstep = 0
         # c_id = 0
         # draw_profile(temp_profile[tstep,c_id,:], saln_profile[tstep,c_id,:], depths[c_id], F"Before Norm SSH:{ssh[tstep, c_id]} id:{c_id} ", join(config[ProjTrainingParams.input_folder_preproc], "imgs",F"{c_id}_BN.png"))
-        temp_profile, saln_profile = normDenormData(stats_input_file, temp_profile, saln_profile)
+        temp_profile, saln_profile = normDenormData(stats_input_file, temp_profile, saln_profile, loc=locations)
         # draw_profile(temp_profile[tstep,c_id,:], saln_profile[tstep,c_id,:], depths[c_id], F"After Norm SSH:{ssh[tstep, c_id]} id:{c_id} ", join(config[ProjTrainingParams.input_folder_preproc], "imgs",F"{c_id}_BN.png"))
     print("Done! ...")
 
@@ -129,8 +130,9 @@ if __name__ == '__main__':
     # exit(1)
 
     # ======================= Multiple training =======================
-    normalize = [True, False]
-    rand_loc = [10, 20, 50, 100, 200, 400]
+    # normalize = [True, False]
+    normalize = [True]
+    rand_loc = [1, 200, 400, 600, 636]
     DEPTH_SIZE = 78
     hid_layers = 3  # Number of hidden layers
 
@@ -140,12 +142,13 @@ if __name__ == '__main__':
             hid_lay_size = int(DEPTH_SIZE*min(RAND_LOC, 15))
             np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
             _run_name = F"GoMLoc_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
+            # _run_name = F"ForceMono_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
             output_size = RAND_LOC*DEPTH_SIZE*2  # We want to output all the profiles depths for temperature and salinity
 
             if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
                 LOCATIONS = range(RAND_LOC)
             else:
-                LOCATIONS = np.random.choice( range(MAX_LOCATION), RAND_LOC, replace=False)
+                LOCATIONS = np.random.choice(range(MAX_LOCATION), RAND_LOC, replace=False)
 
             config[ModelParams.INPUT_SIZE] = RAND_LOC*2 + 1
             config[ProjTrainingParams.locations] = LOCATIONS
@@ -153,4 +156,9 @@ if __name__ == '__main__':
             config[ModelParams.CELLS_PER_HIDDEN_LAYER] = [hid_lay_size for x in range(hid_layers)]  # All depth levels for T and S
             config[ProjTrainingParams.normalize] = NORMALIZE
             config[TrainingParams.config_name] = _run_name
+            # # ====================== Using custom loss ====================
+            # myloss = force_monotonic_density_loss(config)
+            # config[TrainingParams.loss_function] = myloss
+            # config[TrainingParams.evaluation_metrics] = [myloss]  # Metrics to show in tensor flow in the training
+            # ====================== Using custom loss ====================
             doTraining(config)

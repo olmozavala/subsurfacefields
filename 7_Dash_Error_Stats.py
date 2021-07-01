@@ -3,7 +3,6 @@ from io_project.read_utils import get_all_profiles
 import trainingutils as utilsNN
 from textwrap import dedent as d
 from models.modelSelector import select_1d_model
-import cmocean
 import dash
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
@@ -18,9 +17,11 @@ from config.MainConfig import get_prediction_params
 from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, MAX_LOCATION
 from constants.AI_params import TrainingParams, ModelParams
 from img_viz.common import create_folder
+from dash_utils.dash_utils_oz import FiguresAndPlots
 
 from os.path import join
 
+deg_txt = u"\N{DEGREE SIGN}C"
 # https://dash.plot.ly/interactive-graphing
 # https://plot.ly/python-api-reference/
 
@@ -33,11 +34,12 @@ summary_file = "/data/SubsurfaceFields/Output/SUMMARY/summary.csv"
 df = pd.read_csv(summary_file)
 # Adam [True] 2, 6, 10, 14, 18, 22
 # Adam [False] 0, 4, 8, 12, 16, 20
-# model = df.iloc[22]  # Here we identify which model we want to use
-model = df.iloc[18]  # Here we identify which model we want to use
+# model = df.iloc[27]  # Here we identify which model we want to use
+model = df.iloc[0]  # Here we identify which model we want to use
 port = 8080
 
-# Setting Network type (only when network type is UNET)
+# ======== Updating the config info  ==========
+# -------- Setting locations an dnetwork parameters ----
 name = model["Name"]
 split_name = name.split("_")
 hid_layers = int(split_name[5])
@@ -99,12 +101,10 @@ for loc_id in range(density_profile.shape[1]):
 
 meta = {'loc_index': np.array(range(tot_loc))}
 
-# =========== The easiest way is to use scatter_mapbox from a dataframe or from data
-# https://plotly.github.io/plotly.py-docs/generated/plotly.express.scatter_mapbox.html
-
 # ========== Compute summary comparisons
 nn_predictions_t = np.swapaxes(nn_predictions[:,:,:,0],0,1)
 nn_predictions_s = np.swapaxes(nn_predictions[:,:,:,1],0,1)
+
 # ============= RMSE by day of year
 u_dyear = np.unique(dyear)
 rmse_by_dyear_t = np.zeros((depths.shape[0], 36))  # Locations, dayyear, depths
@@ -118,118 +118,21 @@ for i, c_dyear in enumerate(u_dyear):
 rmse_by_depth_t = np.sqrt(np.nanmean((temp_profile - nn_predictions_t)**2, axis=(0,1)))
 rmse_by_depth_s = np.sqrt(np.nanmean((saln_profile - nn_predictions_s)**2, axis=(0,1)))
 
-nn_predictions = np.load(join(output_folder, run_name, "nn_prediction.npy"))
+# ============= RMSE by location
+rmse_by_geo_t = np.sqrt(np.nanmean((temp_profile - nn_predictions_t)**2, axis=(0,2)))
+rmse_by_geo_s = np.sqrt(np.nanmean((saln_profile - nn_predictions_s)**2, axis=(0,2)))
 
 depths_int = [int(x) for x in depths[0,:]]
 
-def getMap(selected_idx, mld):
-    """
-    Draws a map with the locations from the trained network. The selected id is drawn with a different color
-    :param selected_idx:
-    :return:
-    """
-    N = len(mld)
-    if N > 0:
-        cmdict = cmocean.tools.get_dict(cmocean.cm.thermal, N=N) # available colorpalettes here
-        colors_str = ['#%02x%02x%02x' % (int(x[0]*255),int(x[0]*255),int(x[2]*255)) for x in cmdict['red']]
-    else:
-        colors_str = 'fuchsia'
+MyFigObj = FiguresAndPlots(latlons, meta, u_dyear, depths_int)
 
-    if selected_idx == -1:
-        selected_idx = 0
-
-    mydata = [dict(
-        lat=latlons[:,0],
-        lon=latlons[:,1],
-        type="scattermapbox",
-        customdata=meta['loc_index'],
-        marker=dict(color=colors_str) ),
-        dict(
-            lat=[latlons[selected_idx,0]],
-            lon=[latlons[selected_idx,1]],
-            type="scattermapbox",
-            marker=dict(color="red", size=10),
-        )]
-    fig = dict(
-        data=mydata,
-        layout=dict(
-            mapbox=dict(
-                center=dict(
-                    lat=24, lon=-87
-                ),
-                style='carto-positron',
-                # open-street-map, white-bg, carto-positron, carto-darkmatter,
-                # stamen-terrain, stamen-toner, stamen-watercolor
-                pitch=0,
-                # zoom=1,
-                zoom=4,
-            ),
-            height=600
-            # autosize=True,
-        )
-    )
-    return fig
-
-def getErrorByDyearPlot(data, loc, title):
-
-    return {
-        'data': [
-            # {'x': u_dyear, 'y': data[loc,:], 'mode': 'line', 'name': 'Model', 'marker':{'color':'orange'}}, # Model
-            {'x': u_dyear, 'y': np.nanmean(data,axis=0), 'mode': 'line', 'name': 'Model', 'marker':{'color':'orange'}}, # Model
-        ],
-        'layout': {
-            'title': F"{title}",
-            'yaxis':{ 'title':'RMSE'}
-        }
-    }
-
-def getErrorPlot(data, max_depth, title):
-
-    return {
-        'data': [
-            {'x': data[0:max_depth], 'y': depths_int[0:max_depth], 'mode': 'markers', 'name': 'Model'}, # Model
-        ],
-        'layout': {
-            'title': F"{title}",
-            'yaxis':{ 'title':'Depth (m)','autorange':'reversed'}
-        }
-    }
-
-def getScatterPlot(data, nn_predictions, loc_id, day_year, title, max_depth, model_mld, nn_mld):
-    nonan = np.argmax(data[day_year, loc_id,:])
-    if nonan > 0:
-        max_depth = np.min([max_depth, nonan])
-    rmse_all = np.sqrt(np.nanmean((data[:, loc_id, :] - nn_predictions[loc_id, :, :])**2))
-    rmse_current = np.sqrt(np.nanmean((data[day_year, loc_id, :] - nn_predictions[loc_id, day_year, :])**2))
-    return {
-            'data': [
-                {'x': np.mean(data[:, loc_id, 0:max_depth], axis=0), 'y': depths_int[0:max_depth], 'mode': 'lines', 'name': 'Model Mean/STD', 'opacity':0.5,  #  Mean and STD
-                 'error_x': dict(type='data', array=np.std(data[:, loc_id, 0:max_depth], axis=0), visible=True), },
-                {'x': np.mean(nn_predictions[loc_id, :, 0:max_depth], axis=0), 'y': depths_int[0:max_depth], 'mode': 'lines', 'name': 'NN Mean/STD', 'opacity':0.5,  #  Mean and STD
-                 'error_x': dict(type='data', array=np.std(nn_predictions[loc_id, :, 0:max_depth], axis=0), visible=True), },
-                {'x': data[day_year, loc_id, 0:max_depth], 'y': depths_int[0:max_depth], 'mode': 'markers', 'name': 'Model'}, # Model
-                {'x': nn_predictions[loc_id, day_year, 0:max_depth], 'y': depths_int[0:max_depth], 'mode': 'markers', 'name': 'NN'}, # NN
-                # {'x': [np.nanmin(data[:, loc_id, 0:max_depth]), np.nanmax(data[:, loc_id, 0:max_depth])], 'y': [model_mld, model_mld], 'mode': 'line', 'name': F'Model MLD {model_mld}'}, # NN
-                # {'x': [np.nanmin(data[:, loc_id, 0:max_depth]), np.nanmax(data[:, loc_id, 0:max_depth])], 'y': [nn_mld, nn_mld], 'mode': 'line', 'name': F'NN MLD {nn_mld}'}, # NN
-            ],
-            'layout': {
-                'title': F"{title} <br> RMSE: {rmse_current:0.3f}  <br> Mean RMSE {rmse_all: 0.3f} (all dates)",
-                # 'plot_bgcolor': colors['background'],
-                # 'paper_bgcolor': colors['background'],
-                # 'font':{
-                #     'color': colors['text']
-                # }
-
-                'yaxis':{ 'title':'Depth (m)','autorange':'reversed'}
-            }
-        }
-
+# Gets the default layout
 app.layout = dbc.Container([
         dbc.Row(
             dbc.Col(html.Div(name, className="centered"), width=12)
         ),
         dbc.Row(
-            dbc.Col(dcc.Graph(figure=getMap(-1, []), id="id-map"), width=12)
+            dbc.Col(dcc.Graph(figure=MyFigObj.getLocationsMapWithSpecifiedColor(-1, rmse_by_geo_t, rmse_by_geo_s), id="id-map"), width=12)
         ),
         dbc.Row([
             dbc.Col(["Maximum depth to show:", dcc.Dropdown(
@@ -246,15 +149,15 @@ app.layout = dbc.Container([
                 value=0)], width=8)
                 ]),
         dbc.Row( [
-            dbc.Col(dcc.Graph(figure=getScatterPlot(temp_profile, nn_predictions[:,:,:,0], 0, 0,  "Temperature", 78, 0, 0), id="t-scatter"), width=4),
-            dbc.Col(dcc.Graph(figure=getScatterPlot(saln_profile, nn_predictions[:,:,:,1], 0, 0, "Salinity", 78, 0, 0), id="s-scatter"), width=4),
-            dbc.Col(dcc.Graph(figure=getScatterPlot(density_profile, nn_predictions[:,:,:,0], 0, 0, "Density", 78, 0, 0), id="sigma-scatter"), width=4)
+            dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(temp_profile, nn_predictions[:,:,:,0], 0, 0,  "Temperature", 78, 0, 0, deg_txt), id="t-scatter"), width=4),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(saln_profile, nn_predictions[:,:,:,1], 0, 0, "Salinity", 78, 0, 0), id="s-scatter"), width=4),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(density_profile, nn_predictions[:,:,:,0], 0, 0, "Density", 78, 0, 0), id="sigma-scatter"), width=4)
         ]),
         dbc.Row( [
-            dbc.Col(dcc.Graph(figure=getErrorPlot(rmse_by_depth_t, 78, "RMSE by depth Temperature"), id="id-error-t"), width=3),
-            dbc.Col(dcc.Graph(figure=getErrorPlot(rmse_by_depth_s, 78, "RMSE by depth Salinity"), id="id-error-s"), width=3),
-            dbc.Col(dcc.Graph(figure=getErrorByDyearPlot(rmse_by_dyear_t, 0, "RMSE by Day of year Temperature"), id="id-errorbyday-t"), width=3),
-            dbc.Col(dcc.Graph(figure=getErrorByDyearPlot(rmse_by_dyear_s, 0, "RMSE by Day of year Salinity"), id="id-errorbyday-s"), width=3),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_t, 78, "RMSE by depth Temperature", "C"), id="id-error-t"), width=3),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_s, 78, "RMSE by depth Salinity"), id="id-error-s"), width=3),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByYearPlot(rmse_by_dyear_t, 0, "RMSE by Day of year Temperature", deg_txt), id="id-errorbyday-t"), width=3),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByYearPlot(rmse_by_dyear_s, 0, "RMSE by Day of year Salinity"), id="id-errorbyday-s"), width=3),
         ]),
 ], fluid=True)
 
@@ -289,14 +192,15 @@ def display_hover_data(map_data, depth_id, day_year):
     mld_all = [MLD(saln_profile[day_year, i, :], temp_profile[day_year, i, :], depths[i,:]) for i in range(latlons.shape[0])]
 
     # (data, nn_predictions, loc_id, day_year, id_field, title):
-    return [getScatterPlot(temp_profile, nn_predictions[:,:,:,0], loc_id, day_year,  F"Temperature day {dyear[day_year]} Loc {loc_id} ", max_depth, mld, mld_nn),
-            getScatterPlot(saln_profile, nn_predictions[:,:,:,1], loc_id, day_year, F"Salinity day {dyear[day_year]} Loc {loc_id} ",     max_depth, mld, mld_nn),
-            getScatterPlot(density_profile, nn_predictions_density, loc_id, day_year, F"Density day {dyear[day_year]} Loc {loc_id} ",    max_depth, mld, mld_nn),
-            getErrorPlot(rmse_by_depth_t, max_depth, "RMSE by depth Temperature (All locations)"),
-            getErrorPlot(rmse_by_depth_s, max_depth, "RMSE by depth Salinity (All locations)"),
+    return [MyFigObj.getProfilesPlot(temp_profile, nn_predictions[:,:,:,0], loc_id, day_year,  F"Temperature day {dyear[day_year]} Loc {loc_id} ", max_depth, mld, mld_nn, deg_txt),
+            MyFigObj.getProfilesPlot(saln_profile, nn_predictions[:,:,:,1], loc_id, day_year, F"Salinity day {dyear[day_year]} Loc {loc_id} ",     max_depth, mld, mld_nn),
+            MyFigObj.getProfilesPlot(density_profile, nn_predictions_density, loc_id, day_year, F"Density day {dyear[day_year]} Loc {loc_id} ",    max_depth, mld, mld_nn),
+            MyFigObj.getErrorByDepth(rmse_by_depth_t, max_depth, "RMSE by depth Temperature (All locations)", deg_txt),
+            MyFigObj.getErrorByDepth(rmse_by_depth_s, max_depth, "RMSE by depth Salinity (All locations)"),
             # getErrorByDyearPlot(rmse_by_dyear_t, loc_id, "RMSE by day of year Temperature (All locations)"),
             # getErrorByDyearPlot(rmse_by_dyear_s, loc_id, "RMSE by day of year Salinity (All locations)"),
-            getMap(loc_id, mld_all),
+            # MyFigObj.getLocationsMapWithSpecifiedColor(loc_id, mld_all),
+            MyFigObj.getLocationsMapWithSpecifiedColor(loc_id, rmse_by_geo_t, rmse_by_geo_s),
             F"Year {years[day_year]}  day {dyear[day_year]}"
             ]
 

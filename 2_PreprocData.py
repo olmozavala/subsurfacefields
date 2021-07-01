@@ -9,6 +9,7 @@ from PIL import Image
 import xarray as xr
 import numpy as np
 import pandas as pd
+from metrics_proj.isop_metrics import swstate
 import os
 from ExtraUtils.VizUtilsProj import draw_profile
 
@@ -192,7 +193,7 @@ def generalPreproc(lats, lons, n_loc, n_depths, file_names, input_folder, output
 
 def computeMeanSTD():
     """
-    It computes the mean and STD for all the locations stored in the specified folder
+    It computes the mean and STD for all the locations stored in the specified folder for Temperature, Salinity, Density
     :param input_folder:
     :return:
     """
@@ -202,48 +203,44 @@ def computeMeanSTD():
     # Computing STD
     file_names = os.listdir(input_folder)
     first_year = int(file_names[0][0:4])
-    n_loc = len([x for x in file_names if x.find(F"{first_year}") != -1])
-    years = int(len(file_names)/n_loc)
-    tot_time_steps = years*36
+    n_loc = len([x for x in file_names if x.find(F"{first_year}") != -1])  # Should be 637
+    years = int(len(file_names)/n_loc)  # Should be 44
+    days_year = 36
+    tot_time_steps = years*days_year  # Should be 1584
 
-    loc_std_temp = np.zeros((n_loc, n_depths))
-    loc_mean_temp = np.zeros((n_loc, n_depths))
-    loc_std_saln = np.zeros((n_loc, n_depths))
-    loc_mean_saln = np.zeros((n_loc, n_depths))
+    temp = np.zeros((tot_time_steps, n_loc, n_depths))
+    saln = np.zeros((tot_time_steps, n_loc, n_depths))
+    sigma =np.zeros((tot_time_steps, n_loc, n_depths))
 
     lats = np.zeros(n_loc)
     lons = np.zeros(n_loc)
     print("================ MEAN ==================")
     for c_loc in range(n_loc):
-        print(F"Computing MEAN: {c_loc}/{n_loc}")
+        print(F"Computing file: {c_loc}/{n_loc}")
         loc_files = [join(input_folder,x) for x in file_names if x.find(F"{c_loc:04d}") != -1]
+        loc_files.sort()
         ds = xr.open_dataset(loc_files[0])
-        lats[c_loc] = ds.lat_nn[0]
+        lats[c_loc] = ds.lat_nn[0] # We add the current location at the list of final locations
         lons[c_loc] = ds.lon_nn[0]
+        depths = ds.depth.values
         ds.close()
-        for c_file in loc_files:
+        for i_file, c_file in enumerate(loc_files):
+            from_i = i_file*days_year
+            to_i = i_file*days_year + days_year
             ds = xr.open_dataset(c_file)
-            loc_mean_temp[c_loc, :] += np.sum(ds.temp_level.values, axis=0)/tot_time_steps
-            loc_mean_saln[c_loc, :] += np.sum(ds.saln_level.values, axis=0)/tot_time_steps
-            ds.close()
-
-    print("================ STD ==================")
-    for c_loc in range(n_loc):
-        print(F"Computing STD: {c_loc}/{n_loc}")
-        loc_files = [join(input_folder,x) for x in file_names if x.find(F"{c_loc:04d}") != -1]
-        for c_file in loc_files:
-            ds = xr.open_dataset(c_file)
-            if (c_loc == 0):
-                loc_std_saln[c_loc, :] = np.sqrt(np.sum((ds.saln_level.values - loc_mean_saln[c_loc][:])**2, axis=0)/tot_time_steps)
-                loc_std_temp[c_loc, :] = np.sqrt(np.sum((ds.temp_level.values - loc_mean_temp[c_loc][:])**2, axis=0)/tot_time_steps)
-            else:
-                loc_std_saln[c_loc, :] += np.sqrt(np.sum((ds.saln_level.values - loc_mean_saln[c_loc][:])**2, axis=0)/tot_time_steps)
-                loc_std_temp[c_loc, :] += np.sqrt(np.sum((ds.temp_level.values - loc_mean_temp[c_loc][:])**2, axis=0)/tot_time_steps)
+            temp[from_i:to_i, c_loc, :] = ds.temp_level.values
+            saln[from_i:to_i, c_loc, :] = ds.saln_level.values
+            _, d = swstate(ds.saln_level.values, ds.temp_level.values, depths)
+            sigma[from_i:to_i, c_loc, :] = d
             ds.close()
 
     df = pd.DataFrame({'locations':range(n_loc), 'lats': lats, 'lons':lons,
-                       'mean_saln':[x for x in loc_mean_saln], 'mean_temp':[x for x in loc_mean_temp],
-                       'std_saln':[x for x in loc_std_saln], 'std_temp':[x for x in loc_std_temp]})
+                       'mean_saln':[x for x in np.mean(saln, axis=0)],
+                       'mean_temp':[x for x in np.mean(temp, axis=0)],
+                       'mean_sigma':[x for x in np.mean(sigma, axis=0)],
+                       'std_saln':[x for x in np.std(saln, axis=0)],
+                       'std_temp':[x for x in np.std(temp, axis=0)],
+                       'std_sigma':[x for x in np.std(sigma, axis=0)]})
     df.to_csv(join(input_folder, "MEAN_STD_by_loc.csv"))
 
 if __name__ == '__main__':

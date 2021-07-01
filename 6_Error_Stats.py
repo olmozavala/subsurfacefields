@@ -115,14 +115,15 @@ def test_model(config):
     predictions = np.zeros((len(locations), len(test_ids), depths.shape[1], 2))  # Locations, Time, depth, T/S
     for c_date_id, c_date_i in enumerate(test_ids):
         c_date = (c_date_i*10) % 365
-        print(F"Working with day of year: {c_date}")
+        c_year = 1963 + int((c_date_i*10) / 365)
+        print(F"============================================================= ")
+        print(F"Working with day of year: {c_year}")
         if normalize:
             sst = norm_temp_profile[c_date_id,:,0].flatten()
         else:
             sst = temp_profile[c_date_id,:,0].flatten()
 
-        # tx = np.concatenate((ssh[c_id, :].flatten(), temp_profile[c_id,:,0].flatten(), [np.cos(dyear[c_id]*np.pi/365)]))
-        X = [np.concatenate((ssh[c_date_id, :].flatten(), sst, [np.cos(dyear[c_date_id]*np.pi/365)]))]
+        X = [np.concatenate((sst, ssh[c_date_id, :].flatten(), [np.cos(dyear[c_date_id]*np.pi/365)]))]
         X = np.array(X)
 
         # ====================== Make the prediction of the network

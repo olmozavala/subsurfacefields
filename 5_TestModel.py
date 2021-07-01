@@ -145,8 +145,8 @@ def test_model(config):
                                      depths[i,:], F"Profile {c_profile} dyear {c_date}  RMSE Temp: {rmse_temp:0.2f}, Saln: {rmse_saln:0.2f}",
                                      file_name)
 
-        # for c_prof in range(tot_loc):
-            # draw_profile()
+        for c_prof in range(tot_loc):
+            draw_profile()
 
 if __name__ == '__main__':
     main()

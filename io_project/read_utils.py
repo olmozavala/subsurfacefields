@@ -98,12 +98,13 @@ def stringToArray(st_orig):
     str_array = st_orig.replace("[ ","").replace("[","").replace("]","").replace("\n","").split(" ")
     return np.array([float(x) if x != "nan" else np.nan for x in str_array])
 
+
 def normDenormData(stats_file, t, s, normalize=True, loc="all"):
     """
     Normalizes and denormalizes the temperature and salinity profiles
     :param stats_file: this file is normally in the Preproc folder and is called MEAN_STD_by_loc.csv
-    :param t: temperature profile
-    :param s: salinity profile
+    :param t: temperature profile with dimensions [TIMESTEPS, LOCATIONS, DEPTHS]
+    :param s: salinity profile with dimensions [TIMESTEPS, LOCATIONS, DEPTHS]
     :param normalize: boolean indicating true for nomalization false for denormalization
     :param loc: which locations to normalize or denormalize
     :return:
@@ -116,22 +117,24 @@ def normDenormData(stats_file, t, s, normalize=True, loc="all"):
     if loc == "all":
         loc = range(tot_loc)
 
-    for c_loc in loc:
+    for i_loc, c_loc in enumerate(loc):
         # print(c_loc)
         # Get current mean and STD for this location
         mean_temp = stringToArray(df.loc[c_loc, "mean_temp"])
         mean_saln = stringToArray(df.loc[c_loc, "mean_saln"])
+        # mean_sigma = stringToArray(df.loc[c_loc, "mean_sigma"])
         std_temp = stringToArray(df.loc[c_loc, "std_temp"])
         std_saln = stringToArray(df.loc[c_loc, "std_saln"])
+        # std_sigma = stringToArray(df.loc[c_loc, "std_sigma"])
 
         if normalize:
             # Update t and s values with the normalized value
-            # t has dimensions 216, 500, 78 --> time, locations, depth
-            t[:, c_loc, :] = (t[:, c_loc, :] - mean_temp)/std_temp
-            s[:, c_loc, :] = (s[:, c_loc, :] - mean_saln)/std_saln
-
+            # t has dimensions Locations, 2(t,s), 78(depth) --> time, locations, depth
+            t[:, i_loc, :] = (t[:, i_loc, :] - mean_temp)/std_temp
+            s[:, i_loc, :] = (s[:, i_loc, :] - mean_saln)/std_saln
         else:
-            t[:, c_loc, :] = (t[:, c_loc, :]*std_temp) + mean_temp
-            s[:, c_loc, :] = (s[:, c_loc, :]*std_saln) + mean_saln
+            t[:, i_loc, :] = (t[:, i_loc, :]*std_temp) + mean_temp
+            s[:, i_loc, :] = (s[:, i_loc, :]*std_saln) + mean_saln
 
     return t, s
+

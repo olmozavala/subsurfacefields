@@ -6,7 +6,6 @@ import os
 import tensorflow as tf
 import numpy as np
 
-import AI.proj_metrics as mymetrics
 from constants_proj.AI_proj_params import *
 from constants.AI_params import TrainingParams, ModelParams, AiModels
 from img_viz.constants import PlotMode
@@ -20,7 +19,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Decide which GPU to use to execute t
 tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2000)
 
 NORMALIZE = False
-RAND_LOC = 100 # How many random locations to use
+RAND_LOC = 10 # How many random locations to use
 DEPTH_SIZE = 78
 # How big is the hidden layers are limitted by around ~1170 for the GPU
 HID_LAY_SIZE = int(DEPTH_SIZE*min(RAND_LOC,15))
@@ -79,7 +78,7 @@ def get_training_2d():
 
         TrainingParams.optimizer: Adam(lr=0.001),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
         # TrainingParams.optimizer: SGD(),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
-        TrainingParams.batch_size: 10, # READ In this case it is not a common batch size. It indicates the number of images to read from the same file
+        TrainingParams.batch_size: 10,
         TrainingParams.epochs: 5000,
         TrainingParams.config_name: _run_name,
         TrainingParams.data_augmentation: True,
@@ -104,7 +103,7 @@ def get_prediction_params():
         PredictionParams.output_imgs_folder: F"{join(_output_folder,'Prediction','imgs')}",
         PredictionParams.show_imgs: False,
         PredictionParams.model_weights_file: join(weights_folder, "Simple_CNNVeryLarge_Input_All_with_Obs_No_SSH_NO_LATLON_Output_ALL_80x80_UpSampling_NoLand_Mean_Var_2020_10_29_17_10-01-0.45879732.hdf5"),
-        PredictionParams.metrics: mymetrics.only_ocean_mse,
+        PredictionParams.metrics: metrics.mse,
     }
 
     return {**append_model_params(cur_config), **get_training_2d()}

@@ -98,6 +98,7 @@ if __name__ == '__main__':
 
     # Iterate over all the experiments
     for experiment in all_folders:
+        print(experiment)
         all_models = os.listdir(join(trained_models_folder, experiment , "models"))
         min_loss = 100000.0
         best_model = {}
@@ -112,7 +113,6 @@ if __name__ == '__main__':
     print(summary)
 
     summary.to_csv(join(output_folder,"summary.csv"))
-    exit()
 
     # ========= Compare Network type ======
     # data_novar = summary[summary[IN] == "No-STD"]  # All novar data
