@@ -97,7 +97,7 @@ def test_model(config):
     viz_obj = EOAImageVisualizer(disp_images=False, output_folder=output_imgs_folder)
 
     # *********** Read files to predict***********
-    print("Reading all data...")
+    print(F"Reading all data LOCATIONS {locations}...")
     ssh, temp_profile, saln_profile, years, dyear, depths, latlons = get_all_profiles(input_folder_preproc, locations, test_ids)
     print("Done!")
 
@@ -107,7 +107,7 @@ def test_model(config):
         # tstep = 0
         # c_id = 0
         # draw_profile(temp_profile[tstep,c_id,:], saln_profile[tstep,c_id,:], depths[c_id], F"Before Norm SSH:{ssh[tstep, c_id]} id:{c_id} ", join(config[ProjTrainingParams.input_folder_preproc], "imgs",F"{c_id}_BN.png"))
-        norm_temp_profile, norm_saln_profile = normDenormData(stats_input_file, temp_profile, saln_profile)
+        norm_temp_profile, norm_saln_profile = normDenormData(stats_input_file, temp_profile, saln_profile, loc = locations)
         # draw_profile(temp_profile[tstep,c_id,:], saln_profile[tstep,c_id,:], depths[c_id], F"After Norm SSH:{ssh[tstep, c_id]} id:{c_id} ", join(config[ProjTrainingParams.input_folder_preproc], "imgs",F"{c_id}_BN.png"))
     print("Done! ...")
 
@@ -123,7 +123,7 @@ def test_model(config):
         else:
             sst = temp_profile[c_date_id,:,0].flatten()
 
-        X = [np.concatenate((sst, ssh[c_date_id, :].flatten(), [np.cos(dyear[c_date_id]*np.pi/365)]))]
+        X = [np.concatenate((sst, ssh[c_date_id, :].flatten(), [np.sin(dyear[c_date_id]*np.pi/365)]))]
         X = np.array(X)
 
         # ====================== Make the prediction of the network
@@ -132,12 +132,11 @@ def test_model(config):
         toc = time.time() - start
 
         # ****************************
-        # TODO compute RMS between prediction and real, plot by location in a MAP awesome!!
         data = np.reshape(output_nn_original[0], (2, tot_loc, 78))
         nn_temp_profile = np.expand_dims(data[0,:,:], axis=0)
         nn_saln_profile = np.expand_dims(data[1,:,:], axis=0)
         if normalize:
-            nn_temp_profile, nn_saln_profile = normDenormData(stats_input_file, nn_temp_profile, nn_saln_profile, normalize=False)
+            nn_temp_profile, nn_saln_profile = normDenormData(stats_input_file, nn_temp_profile, nn_saln_profile, normalize=False, loc=locations)
 
         # Save denormalized predictions
         predictions[:, c_date_id, :, 0] = np.squeeze(nn_temp_profile)
@@ -155,7 +154,7 @@ def test_model(config):
               F" Temp: {np.mean(mse_byloc[:, c_date_id, 0]):0.2f} "
               F" Saln {np.mean(mse_byloc[:, c_date_id, 1]):0.2f}")
 
-        # # Plot results in a map
+        # Plot results in a map
         # viz_obj.plot_points_map(latlons[:,0], latlons[:,1], colors=mse_byloc[:, c_date_id, 0],
         #                         cmap=cmocean.cm.amp, title=F"Day {c_date} \n Temp RMSE  {np.mean(mse_byloc[:, c_date_id, 0]):0.2f} ",
         #                         file_name_prefix=F"temp_{c_date}")

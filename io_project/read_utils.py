@@ -117,6 +117,9 @@ def normDenormData(stats_file, t, s, normalize=True, loc="all"):
     if loc == "all":
         loc = range(tot_loc)
 
+    tout = np.zeros(t.shape)
+    sout = np.zeros(s.shape)
+
     for i_loc, c_loc in enumerate(loc):
         # print(c_loc)
         # Get current mean and STD for this location
@@ -130,11 +133,11 @@ def normDenormData(stats_file, t, s, normalize=True, loc="all"):
         if normalize:
             # Update t and s values with the normalized value
             # t has dimensions Locations, 2(t,s), 78(depth) --> time, locations, depth
-            t[:, i_loc, :] = (t[:, i_loc, :] - mean_temp)/std_temp
-            s[:, i_loc, :] = (s[:, i_loc, :] - mean_saln)/std_saln
+            tout[:, i_loc, :] = (t[:, i_loc, :] - mean_temp)/std_temp
+            sout[:, i_loc, :] = (s[:, i_loc, :] - mean_saln)/std_saln
         else:
-            t[:, i_loc, :] = (t[:, i_loc, :]*std_temp) + mean_temp
-            s[:, i_loc, :] = (s[:, i_loc, :]*std_saln) + mean_saln
+            tout[:, i_loc, :] = (t[:, i_loc, :]*std_temp) + mean_temp
+            sout[:, i_loc, :] = (s[:, i_loc, :]*std_saln) + mean_saln
 
-    return t, s
+    return tout, sout
 

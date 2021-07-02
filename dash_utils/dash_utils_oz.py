@@ -9,6 +9,56 @@ class FiguresAndPlots:
         self.u_dyear = u_dyear
         self.depths_int = depths_int
 
+    def getLocationsMap(self):
+        """
+        Draws a map with the locations from the trained network. The selected id is drawn with a different color
+        :param selected_idx:
+        :return:
+        """
+        mymarker=dict(
+            # cmin = np.amin(rmse_t),
+            # cmax = np.amax(rmse_t),
+            # color = rmse_t,
+            colorscale="Oranges", # Greys,YlGnB u,Greens,YlOrRd,Bluered,RdBu,Reds,Blues,Picnic,Rainbow,Portland ,Jet,Hot,Blackbody,Earth,Electric,Viridis,Cividis.
+            size=5,
+            colorbar=dict(
+                bgcolor="white",
+                title="Locations"
+            )
+        )
+
+        mydata = [
+            # https://plotly.com/python-api-reference/generated/plotly.graph_objects.Scattermapbox.html
+            dict(
+                lat=self.latlons[:,0],
+                lon=self.latlons[:,1]+.3,
+                type="scattermapbox",
+                customdata=self.meta['loc_index'],
+                hovertemplate="Lat:%{lat:.2f} Lon:%{lon:.2f}",
+                # hovertemplate="HOVER TEMPLATE <extra></extra>",
+                marker=mymarker,
+            ),
+        ]
+        fig = dict(
+            data=mydata,
+            layout=dict(
+                mapbox=dict(
+                    center=dict(
+                        lat=24, lon=-87
+                    ),
+                    style='carto-positron',
+                    # open-street-map, white-bg, carto-positron, carto-darkmatter,
+                    # stamen-terrain, stamen-toner, stamen-watercolor
+                    pitch=0,
+                    # zoom=1,
+                    zoom=4,
+                ),
+                height=600
+                # autosize=True,
+            )
+        )
+        return fig
+
     def getLocationsMapWithSpecifiedColor(self, selected_idx, rmse_t, rmse_s):
         """
         Draws a map with the locations from the trained network. The selected id is drawn with a different color
@@ -145,6 +195,28 @@ class FiguresAndPlots:
             ],
             'layout': {
                 'title': F"{title} <br> RMSE: {rmse_current:0.3f}  <br> Mean RMSE {rmse_all: 0.3f} (all dates)",
+                # 'plot_bgcolor': colors['background'],
+                # 'paper_bgcolor': colors['background'],
+                # 'font':{
+                #     'color': colors['text']
+                # }
+                'yaxis':{ 'title':'Depth (m)','autorange':'reversed'},
+                'xaxis':{ 'title':xtitle}
+            }
+        }
+
+    def getProfilesPlotSingle(self, data, loc_id, day_year, title, max_depth, xtitle=""):
+        nonan = np.argmax(data[day_year, loc_id,:])
+        if nonan > 0:
+            max_depth = np.min([max_depth, nonan])
+        return {
+            'data': [
+                {'x': np.mean(data[:, loc_id, 0:max_depth], axis=0), 'y': self.depths_int[0:max_depth], 'mode': 'lines', 'name': 'Model Mean/STD', 'opacity':0.5,  #  Mean and STD
+                 'error_x': dict(type='data', array=np.std(data[:, loc_id, 0:max_depth], axis=0), visible=True), },
+                {'x': data[day_year, loc_id, 0:max_depth], 'y': self.depths_int[0:max_depth], 'mode': 'markers', 'name': 'Model'}
+            ],
+            'layout': {
+                'title': F"{title} <br> (all dates)",
                 # 'plot_bgcolor': colors['background'],
                 # 'paper_bgcolor': colors['background'],
                 # 'font':{

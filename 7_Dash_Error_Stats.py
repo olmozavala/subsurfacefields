@@ -35,8 +35,8 @@ df = pd.read_csv(summary_file)
 # Adam [True] 2, 6, 10, 14, 18, 22
 # Adam [False] 0, 4, 8, 12, 16, 20
 # model = df.iloc[27]  # Here we identify which model we want to use
-model = df.iloc[0]  # Here we identify which model we want to use
-port = 8080
+model = df.iloc[4]  # Here we identify which model we want to use
+port = 8084
 
 # ======== Updating the config info  ==========
 # -------- Setting locations an dnetwork parameters ----
@@ -85,7 +85,7 @@ total_timesteps = int(years*36)
                                                                          test_percentage=test_perc,
                                                                          shuffle_ids=False)
 
-print("Reading all data...")
+print(F"Reading all data LOCATIONS {locations}...")
 ssh, temp_profile, saln_profile, years, dyear, depths, latlons = get_all_profiles(input_folder_preproc, locations, test_ids)
 print("Done!")
 # locations, day_year, depths, t/s
@@ -180,6 +180,7 @@ def display_hover_data(map_data, depth_id, day_year):
     if map_data == None:
         loc_id = 0
     else:
+        # Here we modify the location to its index
         if 'customdata' in map_data['points'][0].keys():
             loc_id = map_data['points'][0]['customdata']
         else:
@@ -218,5 +219,5 @@ def display_hover_data(map_data, depth_id, day_year):
 #     return json.dumps(selectedData, indent=2)
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
-    # app.run_server(debug=False, port=port, host='146.201.212.115')
+    # app.run_server(debug=True)
+    app.run_server(debug=False, port=port, host='146.201.212.115')

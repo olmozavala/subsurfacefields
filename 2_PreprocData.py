@@ -46,7 +46,7 @@ def PreprocDataBBOXSubsample(proc_id):
     # five_deg_files = [x for x in all_files if "05deg" not in x]
     five_deg_files.sort()
 
-    # ==================== READ DATA AND MAKE A RANDOM SUBSAMPLING ============================
+    # ==================== READ DATA SEELCTS THE LAT AND LON INDEXES ============================
     print(F"Reading data and selecting locations with BBOX: {bbox} ......")
     ds = xr.open_dataset(join(input_folder, five_deg_files[0]))
     indexes = np.logical_and(np.logical_and(ds.lat_nn >= bbox[0], ds.lat_nn <= bbox[1]),
