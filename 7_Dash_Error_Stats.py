@@ -35,13 +35,13 @@ df = pd.read_csv(summary_file)
 # Adam [True] 2, 6, 10, 14, 18, 22
 # Adam [False] 0, 4, 8, 12, 16, 20
 # model = df.iloc[27]  # Here we identify which model we want to use
-model = df.iloc[4]  # Here we identify which model we want to use
-port = 8084
+model = df.iloc[7]  # Here we identify which model we want to use
+port = 8085
 
 # ======== Updating the config info  ==========
 # -------- Setting locations an dnetwork parameters ----
-name = model["Name"]
-split_name = name.split("_")
+MODEL_NAME = model["Name"]
+split_name = MODEL_NAME.split("_")
 hid_layers = int(split_name[5])
 hid_layer_size = int(split_name[3])
 RAND_LOC = int(split_name[1])
@@ -60,8 +60,8 @@ config[ProjTrainingParams.normalize] = split_name[7] == "True"
 config[ModelParams.NUMBER_OF_OUTPUT_CLASSES] = RAND_LOC*config[ProjTrainingParams.tot_depths]*2
 config[PredictionParams.model_weights_file] = model["Path"]
 print(F"Model's weight file: {model['Path']}")
-# Set the name of the network
-run_name = name.replace(".hdf5", "")
+# Set the MODEL_NAME of the network
+run_name = MODEL_NAME.replace(".hdf5", "")
 config[TrainingParams.config_name] = run_name
 input_folder_preproc = config[ProjTrainingParams.input_folder_preproc]
 output_folder = config[PredictionParams.output_folder]
@@ -96,8 +96,8 @@ density_profile = np.zeros(temp_profile.shape)
 nn_predictions_density = np.zeros(nn_predictions.shape[0:3])
 for loc_id in range(density_profile.shape[1]):
     for c_day in range(density_profile.shape[0]):
-        _, density_profile[c_day, loc_id, :] = swstate(saln_profile[c_day, loc_id, :], temp_profile[c_day, loc_id, :], depths[loc_id,:])
-        _, nn_predictions_density[loc_id, c_day, :] = swstate(nn_predictions[loc_id, c_day, :, 1], nn_predictions[loc_id, c_day, :, 0], depths[loc_id,:])
+        _, density_profile[c_day, loc_id, :] = swstate(saln_profile[c_day, loc_id, :], temp_profile[c_day, loc_id, :], depths)
+        _, nn_predictions_density[loc_id, c_day, :] = swstate(nn_predictions[loc_id, c_day, :, 1], nn_predictions[loc_id, c_day, :, 0], depths)
 
 meta = {'loc_index': np.array(range(tot_loc))}
 
@@ -111,8 +111,8 @@ rmse_by_dyear_t = np.zeros((depths.shape[0], 36))  # Locations, dayyear, depths
 rmse_by_dyear_s = np.zeros((depths.shape[0], 36))  # Locations, dayyear, depths
 for i, c_dyear in enumerate(u_dyear):
     dyear_idxs = dyear == c_dyear
-    rmse_by_dyear_t[:, i] = np.sqrt(np.nanmean((temp_profile[dyear_idxs, :, :] - nn_predictions_t[dyear_idxs, :, :])**2, axis=(0,2)))
-    rmse_by_dyear_s[:, i] = np.sqrt(np.nanmean((saln_profile[dyear_idxs, :, :] - nn_predictions_s[dyear_idxs, :, :])**2, axis=(0,2)))
+    rmse_by_dyear_t[:, i] = np.sqrt(np.nanmean((temp_profile[dyear_idxs, :, :] - nn_predictions_t[dyear_idxs, :, :])**2, axis=(0,1)))
+    rmse_by_dyear_s[:, i] = np.sqrt(np.nanmean((saln_profile[dyear_idxs, :, :] - nn_predictions_s[dyear_idxs, :, :])**2, axis=(0,1)))
 
 # ============= RMSE by depth
 rmse_by_depth_t = np.sqrt(np.nanmean((temp_profile - nn_predictions_t)**2, axis=(0,1)))
@@ -122,17 +122,14 @@ rmse_by_depth_s = np.sqrt(np.nanmean((saln_profile - nn_predictions_s)**2, axis=
 rmse_by_geo_t = np.sqrt(np.nanmean((temp_profile - nn_predictions_t)**2, axis=(0,2)))
 rmse_by_geo_s = np.sqrt(np.nanmean((saln_profile - nn_predictions_s)**2, axis=(0,2)))
 
-depths_int = [int(x) for x in depths[0,:]]
+depths_int = [int(x) for x in depths]
 
 MyFigObj = FiguresAndPlots(latlons, meta, u_dyear, depths_int)
 
 # Gets the default layout
 app.layout = dbc.Container([
         dbc.Row(
-            dbc.Col(html.Div(name, className="centered"), width=12)
-        ),
-        dbc.Row(
-            dbc.Col(dcc.Graph(figure=MyFigObj.getLocationsMapWithSpecifiedColor(-1, rmse_by_geo_t, rmse_by_geo_s), id="id-map"), width=12)
+            dbc.Col(dcc.Graph(figure=MyFigObj.getLocationsMapWithSpecifiedColor(-1, rmse_by_geo_t, rmse_by_geo_s, MODEL_NAME), id="id-map"), width=12)
         ),
         dbc.Row([
             dbc.Col(["Maximum depth to show:", dcc.Dropdown(
@@ -151,7 +148,7 @@ app.layout = dbc.Container([
         dbc.Row( [
             dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(temp_profile, nn_predictions[:,:,:,0], 0, 0,  "Temperature", 78, 0, 0, deg_txt), id="t-scatter"), width=4),
             dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(saln_profile, nn_predictions[:,:,:,1], 0, 0, "Salinity", 78, 0, 0), id="s-scatter"), width=4),
-            dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(density_profile, nn_predictions[:,:,:,0], 0, 0, "Density", 78, 0, 0), id="sigma-scatter"), width=4)
+            dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(density_profile, nn_predictions_density, 0, 0, "Density", 78, 0, 0), id="sigma-scatter"), width=4)
         ]),
         dbc.Row( [
             dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_t, 78, "RMSE by depth Temperature", "C"), id="id-error-t"), width=3),
@@ -188,9 +185,9 @@ def display_hover_data(map_data, depth_id, day_year):
 
     max_depth = depth_id
     # locations, day_year, depths, t/s
-    mld_nn = MLD(nn_predictions[loc_id, day_year, 0:max_depth,1], nn_predictions[loc_id, day_year, 0:max_depth,1], depths[loc_id,0:max_depth])
-    mld = MLD(saln_profile[day_year, loc_id, 0:max_depth], temp_profile[day_year, loc_id, 0:max_depth], depths[loc_id,0:max_depth])
-    mld_all = [MLD(saln_profile[day_year, i, :], temp_profile[day_year, i, :], depths[i,:]) for i in range(latlons.shape[0])]
+    mld_nn = MLD(nn_predictions[loc_id, day_year, 0:max_depth,1], nn_predictions[loc_id, day_year, 0:max_depth,1], depths[0:max_depth])
+    mld = MLD(saln_profile[day_year, loc_id, 0:max_depth], temp_profile[day_year, loc_id, 0:max_depth], depths[0:max_depth])
+    mld_all = [MLD(saln_profile[day_year, i, :], temp_profile[day_year, i, :], depths) for i in range(latlons.shape[0])]
 
     # (data, nn_predictions, loc_id, day_year, id_field, title):
     return [MyFigObj.getProfilesPlot(temp_profile, nn_predictions[:,:,:,0], loc_id, day_year,  F"Temperature day {dyear[day_year]} Loc {loc_id} ", max_depth, mld, mld_nn, deg_txt),
@@ -200,8 +197,7 @@ def display_hover_data(map_data, depth_id, day_year):
             MyFigObj.getErrorByDepth(rmse_by_depth_s, max_depth, "RMSE by depth Salinity (All locations)"),
             # getErrorByDyearPlot(rmse_by_dyear_t, loc_id, "RMSE by day of year Temperature (All locations)"),
             # getErrorByDyearPlot(rmse_by_dyear_s, loc_id, "RMSE by day of year Salinity (All locations)"),
-            # MyFigObj.getLocationsMapWithSpecifiedColor(loc_id, mld_all),
-            MyFigObj.getLocationsMapWithSpecifiedColor(loc_id, rmse_by_geo_t, rmse_by_geo_s),
+            MyFigObj.getLocationsMapWithSpecifiedColor(loc_id, rmse_by_geo_t, rmse_by_geo_s, MODEL_NAME),
             F"Year {years[day_year]}  day {dyear[day_year]}"
             ]
 

@@ -112,7 +112,7 @@ def test_model(config):
     print("Done! ...")
 
     mse_byloc = np.zeros((len(locations), len(test_ids), 2))
-    predictions = np.zeros((len(locations), len(test_ids), depths.shape[1], 2))  # Locations, Time, depth, T/S
+    predictions = np.zeros((len(locations), len(test_ids), depths.shape[0], 2))  # Locations, Time, depth, T/S
     for c_date_id, c_date_i in enumerate(test_ids):
         c_date = (c_date_i*10) % 365
         c_year = 1963 + int((c_date_i*10) / 365)
@@ -167,13 +167,13 @@ def test_model(config):
     # Saving all the predictions as a numpy array
     np.save(join(nn_prediction_folder,"nn_prediction"), predictions)
     # Summary of all days
-    viz_obj.plot_points_map(latlons[:,0], latlons[:,1], colors=np.mean(mse_byloc[:, :, 0], axis=1),
-                            cmap=cmocean.cm.amp, title=F"Temp MEAN RMSE  {np.mean(mse_byloc[:, :, 0]):0.2f} ",
-                            file_name_prefix=F"0_MEAN_temp")
-
-    viz_obj.plot_points_map(latlons[:,0], latlons[:,1], colors=np.mean(mse_byloc[:, :, 1], axis=1),
-                            cmap=cmocean.cm.amp, title=F"Saln MEAN RMSE  {np.mean(mse_byloc[:, :, 1]):0.2f} ",
-                            file_name_prefix=F"0_MEAN_saln")
+    # viz_obj.plot_points_map(latlons[:,0], latlons[:,1], colors=np.mean(mse_byloc[:, :, 0], axis=1),
+    #                         cmap=cmocean.cm.amp, title=F"Temp MEAN RMSE  {np.mean(mse_byloc[:, :, 0]):0.2f} ",
+    #                         file_name_prefix=F"0_MEAN_temp")
+    #
+    # viz_obj.plot_points_map(latlons[:,0], latlons[:,1], colors=np.mean(mse_byloc[:, :, 1], axis=1),
+    #                         cmap=cmocean.cm.amp, title=F"Saln MEAN RMSE  {np.mean(mse_byloc[:, :, 1]):0.2f} ",
+    #                         file_name_prefix=F"0_MEAN_saln")
 
 
 if __name__ == '__main__':

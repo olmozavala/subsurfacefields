@@ -5,7 +5,7 @@ from ExtraUtils.VizUtilsProj import draw_profile
 from os.path import join
 
 
-def data_gen_from_preproc(config, ssh, temp_profile, saln_profile, depths, years, dyear, ids):
+def data_gen_from_preproc(config, ssh, temp_profile, saln_profile, dyear, ids):
     """
     This generator should generate X and Y for a CNN
     :param path:

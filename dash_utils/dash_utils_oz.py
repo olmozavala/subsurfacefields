@@ -59,7 +59,7 @@ class FiguresAndPlots:
         )
         return fig
 
-    def getLocationsMapWithSpecifiedColor(self, selected_idx, rmse_t, rmse_s):
+    def getLocationsMapWithSpecifiedColor(self, selected_idx, rmse_t, rmse_s, title):
         """
         Draws a map with the locations from the trained network. The selected id is drawn with a different color
         :param selected_idx:
@@ -130,6 +130,7 @@ class FiguresAndPlots:
         fig = dict(
             data=mydata,
             layout=dict(
+                title=title,
                 mapbox=dict(
                     center=dict(
                         lat=24, lon=-87
@@ -141,7 +142,7 @@ class FiguresAndPlots:
                     # zoom=1,
                     zoom=4,
                 ),
-                height=600
+                height=500
                 # autosize=True,
             )
         )

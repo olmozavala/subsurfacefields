@@ -19,8 +19,8 @@ def create_folder(output_folder):
 
 def main():
     # ----------- Parallel -------
-    # img_generation_all()
-    img_generation_3D()
+    img_generation_all()
+    # img_generation_3D()
 
 def data_summary(ds):
     print("------------- Data summary ---------------------")
