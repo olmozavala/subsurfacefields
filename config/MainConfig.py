@@ -19,7 +19,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Decide which GPU to use to execute t
 tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2000)
 
 NORMALIZE = False
-RAND_LOC = 10 # How many random locations to use
+RAND_LOC = 3 # How many random locations to use
 DEPTH_SIZE = 78
 # How big is the hidden layers are limitted by around ~1170 for the GPU
 HID_LAY_SIZE = int(DEPTH_SIZE*min(RAND_LOC,15))
@@ -78,7 +78,7 @@ def get_training_2d():
 
         TrainingParams.optimizer: Adam(lr=0.001),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
         # TrainingParams.optimizer: SGD(),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
-        TrainingParams.batch_size: 40,
+        TrainingParams.batch_size: 2,
         TrainingParams.epochs: 5000,
         TrainingParams.config_name: _run_name,
         TrainingParams.data_augmentation: True,

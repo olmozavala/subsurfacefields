@@ -64,43 +64,45 @@ def force_monotonic_density_loss(config):
             # tf.print(F"------------------------{c_batch}----------------------------")
             for i in range(tot_loc):
                 c_max_depth = max_depth_idx_tf[i]
+                # ============ Denormalizing
                 t = (y_pred_res[c_batch, 0, i, :c_max_depth]*all_std_temp_tf[i,:c_max_depth]) + all_mean_temp_tf[i,:c_max_depth]
                 s = (y_pred_res[c_batch, 1, i, :c_max_depth]*all_std_saln_tf[i,:c_max_depth]) + all_mean_saln_tf[i,:c_max_depth]
-                # ============ COMPUTE DENSITY HERE
+                # ============ Computing density
                 d = swstate_tf(s, t, all_depths[:c_max_depth])
+                # ============ Loss function for monotonic restricted density profile
                 diff = d[:-2] - d[1:-1]
                 if i == 0 and c_batch == 0:
                     error_mon = tf.add(0.0, tf.reduce_sum(diff[diff > 0])/tot_loc)
                 else:
                     error_mon = error_mon + tf.reduce_sum(diff[diff > 0])/tot_loc
 
-                # true_t = (y_true_res[c_batch, 0, i, :c_max_depth]*all_std_temp_tf[i,:c_max_depth]) + all_mean_temp_tf[i,:c_max_depth]
-                # true_s = (y_true_res[c_batch, 1, i, :c_max_depth]*all_std_saln_tf[i,:c_max_depth]) + all_mean_saln_tf[i,:c_max_depth]
-                # true_d = swstate_tf(true_s, true_t, all_depths[:c_max_depth])
-                # for j in range(max_depth_idx[i] - 2): # The -2 is because we are also printing the difference and there we lost one index
-                #     tf.print(F"%%%%%%%%%%%%% {j} %%%%%%%%%%%%%%%%%%%%%%")
-                #     tf.print(y_true_res[c_batch,0,i,j])
-                #     tf.print(y_true_res[c_batch,1,i,j])
-                #     tf.print(y_pred_res[c_batch,0,i,j])
-                #     tf.print(y_pred_res[c_batch,1,i,j])
-                #     tf.print(F"************* {j} **********************")
-                #     tf.print(true_t[j])
-                #     tf.print(true_s[j])
-                #     tf.print(t[j])
-                #     tf.print(s[j])
-                #     tf.print(F"------------- {j} ----------------------")
-                #     tf.print(true_d[j])
-                #     tf.print(d[j])
-                #     tf.print(F"&&&&&&&&&&&&")
-                #     tf.print(diff[j])
+                true_t = (y_true_res[c_batch, 0, i, :c_max_depth]*all_std_temp_tf[i,:c_max_depth]) + all_mean_temp_tf[i,:c_max_depth]
+                true_s = (y_true_res[c_batch, 1, i, :c_max_depth]*all_std_saln_tf[i,:c_max_depth]) + all_mean_saln_tf[i,:c_max_depth]
+                true_d = swstate_tf(true_s, true_t, all_depths[:c_max_depth])
+                for j in range(max_depth_idx[i] - 2): # The -2 is because we are also printing the difference and there we lost one index
+                    tf.print(F"%%%%%%%%%%%%% {j} %%%%%%%%%%%%%%%%%%%%%%")
+                    tf.print(y_true_res[c_batch,0,i,j])
+                    tf.print(y_true_res[c_batch,1,i,j])
+                    tf.print(y_pred_res[c_batch,0,i,j])
+                    tf.print(y_pred_res[c_batch,1,i,j])
+                    tf.print(F"************* {j} **********************")
+                    tf.print(true_t[j])
+                    tf.print(true_s[j])
+                    tf.print(t[j])
+                    tf.print(s[j])
+                    tf.print(F"------------- {j} ----------------------")
+                    tf.print(true_d[j])
+                    tf.print(d[j])
+                    tf.print(F"&&&&&&&&&&&&")
+                    tf.print(diff[j])
 
         y_true_f = K.flatten(y_true)
         y_pred_f = K.flatten(y_pred)
         rmse = tf.math.reduce_mean(tf.math.squared_difference(y_true_f, y_pred_f))
-        tf.print(F"RMSE:")
-        tf.print(rmse)
-        tf.print(F"ERROR:")
-        tf.print(error_mon)
+        # tf.print(F"RMSE:")
+        # tf.print(rmse)
+        # tf.print(F"ERROR:")
+        # tf.print(error_mon)
         return rmse + error_mon
         # return rmse
 
@@ -124,6 +126,8 @@ def only_ocean_mse(y_true, y_pred, smooth=1.0):
 if __name__ == '__main__':
 
     from config.MainConfig import get_training_2d
+    from io_project.read_utils import get_all_profiles, normDenormData
+
     config = get_training_2d()
     LOCATIONS = config[ProjTrainingParams.locations]
     batch_size = config[TrainingParams.batch_size]
@@ -131,12 +135,24 @@ if __name__ == '__main__':
     depth_size = 78
     output_size = RAND_LOC*depth_size*2  # We want to output all the profiles all_depths for temperature and salinity
 
-    y_true = tf.random.uniform([batch_size, output_size])
-    y_pred = tf.random.uniform([batch_size, output_size])
+    # ========= With random data ==============
+    # y_true = tf.random.uniform([batch_size, output_size])
+    # y_pred = tf.random.uniform([batch_size, output_size])
 
-    # TODO !!!!!!!!!!!!!!!!!!!!!
-    # TODO Parece ser que el resample no funciona bien porque aparecen nans en el mismo lugar
+    # ========= With real data ==============
+    ssh, temp_profile, saln_profile, years, dyear, depths, latlons = get_all_profiles("/data/SubsurfaceFields/PreprocGoM", LOCATIONS, time_steps=range(10))
+    temp_profile, saln_profile = normDenormData("/data/SubsurfaceFields/PreprocGoM/MEAN_STD_by_loc.csv", temp_profile, saln_profile, loc=LOCATIONS)
 
+    y_true = np.zeros([batch_size, output_size], dtype=np.float32)
+    y_pred = np.zeros([batch_size, output_size], dtype=np.float32)
+
+    for i in range(batch_size):
+        c_timestep = i
+        ty = np.concatenate((temp_profile[c_timestep,:,:].flatten(), saln_profile[c_timestep,:,:].flatten()))
+        y_true[i,:] = ty
+        y_pred[i,:] = ty
+
+    # ========= Test function ==============
     myloss = force_monotonic_density_loss(config)
     lval = myloss(y_true, y_pred)
     print(F"Test loss value: {lval}")
