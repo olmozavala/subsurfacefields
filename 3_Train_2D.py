@@ -132,7 +132,7 @@ if __name__ == '__main__':
     # ======================= Multiple training =======================
     # normalize = [True, False]
     normalize = [True]
-    rand_loc = [100, 200, 400, 600, 636]
+    rand_loc = [2, 4, 100, 200, 400, 600, 636]
     DEPTH_SIZE = 78
     hid_layers = 3  # Number of hidden layers
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
             # How big is the hidden layers are limitted by around ~1170 for the GPU
             hid_lay_size = int(DEPTH_SIZE*min(RAND_LOC, 15))
             np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
-            _run_name = F"GoMLoc_CUSTOM{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
+            _run_name = F"GoMLoc_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
             # _run_name = F"ForceMono_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
             output_size = RAND_LOC*DEPTH_SIZE*2  # We want to output all the profiles depths for temperature and salinity
 

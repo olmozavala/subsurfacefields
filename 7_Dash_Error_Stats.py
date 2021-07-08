@@ -34,9 +34,10 @@ summary_file = "/data/SubsurfaceFields/Output/SUMMARY/summary.csv"
 df = pd.read_csv(summary_file)
 # Adam [True] 2, 6, 10, 14, 18, 22
 # Adam [False] 0, 4, 8, 12, 16, 20
-# model = df.iloc[27]  # Here we identify which model we want to use
-model = df.iloc[7]  # Here we identify which model we want to use
-port = 8085
+model = df.iloc[MODELNUMBER]  # Here we identify which model we want to use
+port = 80MODELPORT
+# model = df.iloc[0]  # Here we identify which model we want to use
+# port = 8082
 
 # ======== Updating the config info  ==========
 # -------- Setting locations an dnetwork parameters ----
@@ -117,10 +118,16 @@ for i, c_dyear in enumerate(u_dyear):
 # ============= RMSE by depth
 rmse_by_depth_t = np.sqrt(np.nanmean((temp_profile - nn_predictions_t)**2, axis=(0,1)))
 rmse_by_depth_s = np.sqrt(np.nanmean((saln_profile - nn_predictions_s)**2, axis=(0,1)))
+rmse_by_depth_d = np.sqrt(np.nanmean((density_profile - np.swapaxes(nn_predictions_density,0,1))**2, axis=(0,1)))
 
 # ============= RMSE by location
 rmse_by_geo_t = np.sqrt(np.nanmean((temp_profile - nn_predictions_t)**2, axis=(0,2)))
 rmse_by_geo_s = np.sqrt(np.nanmean((saln_profile - nn_predictions_s)**2, axis=(0,2)))
+
+# ============= RMSE all
+rmse_t_all = np.sqrt(np.nanmean((temp_profile - nn_predictions_t)**2))
+rmse_s_all = np.sqrt(np.nanmean((saln_profile - nn_predictions_s)**2))
+MODEL_NAME += F" T: {rmse_t_all:.3f}  S:{rmse_s_all:.3f}"
 
 depths_int = [int(x) for x in depths]
 
@@ -151,8 +158,9 @@ app.layout = dbc.Container([
             dbc.Col(dcc.Graph(figure=MyFigObj.getProfilesPlot(density_profile, nn_predictions_density, 0, 0, "Density", 78, 0, 0), id="sigma-scatter"), width=4)
         ]),
         dbc.Row( [
-            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_t, 78, "RMSE by depth Temperature", "C"), id="id-error-t"), width=3),
-            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_s, 78, "RMSE by depth Salinity"), id="id-error-s"), width=3),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_t, 78, "RMSE by depth Temperature", "C"), id="id-error-t"), width=2),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_s, 78, "RMSE by depth Salinity"), id="id-error-s"), width=2),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_d, 78, "RMSE by depth Density"), id="id-error-d"), width=2),
             dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByYearPlot(rmse_by_dyear_t, 0, "RMSE by Day of year Temperature", deg_txt), id="id-errorbyday-t"), width=3),
             dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByYearPlot(rmse_by_dyear_s, 0, "RMSE by Day of year Salinity"), id="id-errorbyday-s"), width=3),
         ]),
@@ -164,6 +172,7 @@ app.layout = dbc.Container([
      Output('sigma-scatter', 'figure'),
      Output('id-error-t', 'figure'),
      Output('id-error-s', 'figure'),
+     Output('id-error-d', 'figure'),
      # Output('id-errorbyday-t', 'figure'),
      # Output('id-errorbyday-s', 'figure'),
      Output('id-map', 'figure'),
@@ -195,6 +204,7 @@ def display_hover_data(map_data, depth_id, day_year):
             MyFigObj.getProfilesPlot(density_profile, nn_predictions_density, loc_id, day_year, F"Density day {dyear[day_year]} Loc {loc_id} ",    max_depth, mld, mld_nn),
             MyFigObj.getErrorByDepth(rmse_by_depth_t, max_depth, "RMSE by depth Temperature (All locations)", deg_txt),
             MyFigObj.getErrorByDepth(rmse_by_depth_s, max_depth, "RMSE by depth Salinity (All locations)"),
+            MyFigObj.getErrorByDepth(rmse_by_depth_d, max_depth, "RMSE by depth Density (All locations)"),
             # getErrorByDyearPlot(rmse_by_dyear_t, loc_id, "RMSE by day of year Temperature (All locations)"),
             # getErrorByDyearPlot(rmse_by_dyear_s, loc_id, "RMSE by day of year Salinity (All locations)"),
             MyFigObj.getLocationsMapWithSpecifiedColor(loc_id, rmse_by_geo_t, rmse_by_geo_s, MODEL_NAME),

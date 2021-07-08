@@ -61,8 +61,8 @@ def append_model_params(cur_config):
         ModelParams.HIDDEN_LAYERS: hid_layers,
         ModelParams.CELLS_PER_HIDDEN_LAYER: [hid_lay_size for x in range(hid_layers) ], # All depth levels for T and S
         ModelParams.NUMBER_OF_OUTPUT_CLASSES: output_size, # All depth levels for T and S
-        ModelParams.ACTIVATION_HIDDEN_LAYERS: 'relu', # All depth levels for T and S
-        ModelParams.ACTIVATION_OUTPUT_LAYERS: None, # All depth levels for T and S
+        ModelParams.ACTIVATION_HIDDEN_LAYERS: 'relu',
+        ModelParams.ACTIVATION_OUTPUT_LAYERS: None,
     }
     return {**cur_config, **model_config}
 
@@ -78,7 +78,7 @@ def get_training_2d():
 
         TrainingParams.optimizer: Adam(lr=0.001),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
         # TrainingParams.optimizer: SGD(),  # Default values lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None,
-        TrainingParams.batch_size: 2,
+        TrainingParams.batch_size: 10,
         TrainingParams.epochs: 5000,
         TrainingParams.config_name: _run_name,
         TrainingParams.data_augmentation: True,

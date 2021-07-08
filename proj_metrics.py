@@ -49,52 +49,46 @@ def force_monotonic_density_loss(config):
     all_depths = tf.constant([0.0,2.0,4.0,6.0,8.0,10.0,15.0,20.0,25.0,30.0,35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,85.0,90.0,95.0,100.0,110.0,120.0,130.0,140.0,150.0,160.0,170.0,180.0,190.0,200.0,220.0,240.0,260.0,280.0,300.0,350.0,400.0,500.0,600.0,700.0,800.0,900.0,1000.0,1100.0,1200.0,1300.0,1400.0,1500.0,1600.0,1800.0,2000.0,2200.0,2400.0,2600.0,2800.0,3000.0,3200.0,3400.0,3600.0,3800.0,4000.0,4200.0,4400.0,4600.0,4800.0,5000.0,5200.0,5400.0,5600.0,5800.0,6000.0,6200.0,6400.0,6600.0])
     # =================================== Computing the loss function =================================================
 
-    # @tf.function
+    @tf.function
     def loss(y_true, y_pred):
         # Here we should start the loss function
-        # tf.print(F"========================{y_pred.shape}============================")
-        # tf.print(F"Type of output: {y_pred.dtype}")
-        # tf.print(F"Number of LOCATIONS: {tot_loc}")
-        # tf.print(F"y_pred Running on GPU: {y_pred.device.endswith('GPU:0')}")
+        # batch (timesteps), T and S, locations, depth
         y_pred_res = tf.reshape(y_pred, [batch_size, 2, tot_loc, 78])
-        y_true_res = tf.reshape(y_true, [batch_size, 2, tot_loc, 78])
+        # y_true_res = tf.reshape(y_true, [batch_size, 2, tot_loc, 78])
 
-        # # Denormalize the data
-        for c_batch in range(batch_size):
-            # tf.print(F"------------------------{c_batch}----------------------------")
-            for i in range(tot_loc):
-                c_max_depth = max_depth_idx_tf[i]
-                # ============ Denormalizing
-                t = (y_pred_res[c_batch, 0, i, :c_max_depth]*all_std_temp_tf[i,:c_max_depth]) + all_mean_temp_tf[i,:c_max_depth]
-                s = (y_pred_res[c_batch, 1, i, :c_max_depth]*all_std_saln_tf[i,:c_max_depth]) + all_mean_saln_tf[i,:c_max_depth]
-                # ============ Computing density
-                d = swstate_tf(s, t, all_depths[:c_max_depth])
-                # ============ Loss function for monotonic restricted density profile
-                diff = d[:-2] - d[1:-1]
-                if i == 0 and c_batch == 0:
-                    error_mon = tf.add(0.0, tf.reduce_sum(diff[diff > 0])/tot_loc)
-                else:
-                    error_mon = error_mon + tf.reduce_sum(diff[diff > 0])/tot_loc
+        for i in range(tot_loc):
+            c_max_depth = max_depth_idx_tf[i]
+            # ============ Denormalizing
+            t = (y_pred_res[:, 0, i, :c_max_depth]*all_std_temp_tf[i,:c_max_depth]) + all_mean_temp_tf[i,:c_max_depth]
+            s = (y_pred_res[:, 1, i, :c_max_depth]*all_std_saln_tf[i,:c_max_depth]) + all_mean_saln_tf[i,:c_max_depth]
+            # ============ Computing density
+            d = swstate_tf(s, t, all_depths[:c_max_depth])
+            # ============ Loss function for monotonic restricted density profile
+            diff = d[:,:-2] - d[:,1:-1]
+            if i == 0:
+                error_mon = tf.reduce_sum(diff[diff > 0])/tot_loc
+            else:
+                error_mon += tf.reduce_sum(diff[diff > 0])/tot_loc
 
-                true_t = (y_true_res[c_batch, 0, i, :c_max_depth]*all_std_temp_tf[i,:c_max_depth]) + all_mean_temp_tf[i,:c_max_depth]
-                true_s = (y_true_res[c_batch, 1, i, :c_max_depth]*all_std_saln_tf[i,:c_max_depth]) + all_mean_saln_tf[i,:c_max_depth]
-                true_d = swstate_tf(true_s, true_t, all_depths[:c_max_depth])
-                for j in range(max_depth_idx[i] - 2): # The -2 is because we are also printing the difference and there we lost one index
-                    tf.print(F"%%%%%%%%%%%%% {j} %%%%%%%%%%%%%%%%%%%%%%")
-                    tf.print(y_true_res[c_batch,0,i,j])
-                    tf.print(y_true_res[c_batch,1,i,j])
-                    tf.print(y_pred_res[c_batch,0,i,j])
-                    tf.print(y_pred_res[c_batch,1,i,j])
-                    tf.print(F"************* {j} **********************")
-                    tf.print(true_t[j])
-                    tf.print(true_s[j])
-                    tf.print(t[j])
-                    tf.print(s[j])
-                    tf.print(F"------------- {j} ----------------------")
-                    tf.print(true_d[j])
-                    tf.print(d[j])
-                    tf.print(F"&&&&&&&&&&&&")
-                    tf.print(diff[j])
+            # true_t = (y_true_res[c_batch, 0, i, :c_max_depth]*all_std_temp_tf[i,:c_max_depth]) + all_mean_temp_tf[i,:c_max_depth]
+            # true_s = (y_true_res[c_batch, 1, i, :c_max_depth]*all_std_saln_tf[i,:c_max_depth]) + all_mean_saln_tf[i,:c_max_depth]
+            # true_d = swstate_tf(true_s, true_t, all_depths[:c_max_depth])
+            # for j in range(max_depth_idx[i] - 2): # The -2 is because we are also printing the difference and there we lost one index
+            #     tf.print(F"%%%%%%%%%%%%% {j} %%%%%%%%%%%%%%%%%%%%%%")
+            #     tf.print(y_true_res[c_batch,0,i,j])
+            #     tf.print(y_true_res[c_batch,1,i,j])
+            #     tf.print(y_pred_res[c_batch,0,i,j])
+            #     tf.print(y_pred_res[c_batch,1,i,j])
+            #     tf.print(F"************* {j} **********************")
+            #     tf.print(true_t[j])
+            #     tf.print(true_s[j])
+            #     tf.print(t[j])
+            #     tf.print(s[j])
+            #     tf.print(F"------------- {j} ----------------------")
+            #     tf.print(true_d[j])
+            #     tf.print(d[j])
+            #     tf.print(F"&&&&&&&&&&&&")
+            #     tf.print(diff[j])
 
         y_true_f = K.flatten(y_true)
         y_pred_f = K.flatten(y_pred)
@@ -103,7 +97,7 @@ def force_monotonic_density_loss(config):
         # tf.print(rmse)
         # tf.print(F"ERROR:")
         # tf.print(error_mon)
-        return rmse + error_mon
+        return rmse + error_mon*10
         # return rmse
 
     return loss
