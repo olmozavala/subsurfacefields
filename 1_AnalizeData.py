@@ -17,10 +17,6 @@ def create_folder(output_folder):
     if not(os.path.exists(output_folder)):
         os.makedirs(output_folder)
 
-def main():
-    # ----------- Parallel -------
-    img_generation_all()
-    # img_generation_3D()
 
 def data_summary(ds):
     print("------------- Data summary ---------------------")
@@ -174,6 +170,27 @@ def img_generation_all():
     # plot5DegDataFiles(sparse_files, input_folder, output_folder, "5Deg")
     print("Done!")
 
+def plot_tests_preproc():
+    input_file = "/data/SubsurfaceFields/PreprocGoM/all_data.nc"
+
+    print("Reading files...")
+    ds = xr.open_dataset(input_file)
+
+    dyear = ds.dyear.values
+    sst_bydyear = np.zeros(36)
+    for i_dyear, c_dyear in enumerate(np.unique(dyear)):
+        dyear_idx = c_dyear == dyear
+        sst_bydyear[i_dyear] = np.mean(ds.t[:, dyear_idx, 0].values)
+
+    plt.subplot(1,3,1)
+    plt.plot(sst_bydyear)
+    plt.subplot(1,3,2)
+    plt.plot(np.gradient(sst_bydyear), 'r')
+    plt.subplot(1,3,3)
+    plt.plot(sst_bydyear[1:] - sst_bydyear[:-1], 'y')
+    plt.show()
+
+
 def stringToArray(st_orig):
     # TODO this is very bad, improve it. We should save a np array somehow. How is it we cant read it?
     st_orig = re.sub("\ +", " ", st_orig)
@@ -223,12 +240,43 @@ def plot_obtained_stats():
         ax1.invert_yaxis()
         plt.show()
 
+def crop_preproc_data():
+    input_file = "/data/SubsurfaceFields/PreprocGoM/all_data.nc"
+    output_file = "/data/SubsurfaceFields/PreprocGoM/all_data_crop.nc"
 
+    ds = xr.open_dataset(input_file)
 
+    id = [626,181]# Number between 1 and 637
+
+    temp = xr.DataArray(ds.t[id], dims=['id', 'time', 'depth'])
+    saln = xr.DataArray(ds.s[id], dims=['id', 'time', 'depth'])
+    sshout = xr.DataArray(ds.ssh[id], dims=['id', 'time'])
+    da_years = xr.DataArray(ds.year, dims=['time'])
+    da_dyear= xr.DataArray(ds.dyear, dims=['time'])
+    # Coordinates
+    times = ds.time
+
+    dsout = xr.Dataset(
+        {
+            "t": (('id', 'time', 'depth'), temp),
+            "s": (('id', 'time', 'depth'), saln),
+            "ssh": (('id', 'time'), sshout),
+            "year": (('time'), da_years),
+            "dyear": (('time'), da_dyear),
+        },
+        {"time": times, "lat": ds.lat[id], "lon": ds.lon[id], "id": ds.id[id], "depth": ds.depth}
+    )
+
+    dsout.to_netcdf(output_file)
+    dsout.close()
 
 if __name__ == '__main__':
+    plot_tests_preproc()
     # main()
-    plot_obtained_stats()
+    # plot_obtained_stats()
+    # crop_preproc_data()
+    # img_generation_all()
+    # img_generation_3D()
 
 ##
 

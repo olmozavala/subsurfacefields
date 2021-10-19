@@ -185,9 +185,9 @@ class FiguresAndPlots:
         rmse_current = np.sqrt(np.nanmean((data[day_year, loc_id, :] - nn_predictions[loc_id, day_year, :])**2))
         return {
             'data': [
-                {'x': np.mean(data[:, loc_id, 0:max_depth], axis=0), 'y': self.depths_int[0:max_depth], 'mode': 'lines', 'name': 'Model Mean/STD', 'opacity':0.5,  #  Mean and STD
+                {'x': np.mean(data[:, loc_id, 0:max_depth], axis=0), 'y': self.depths_int[0:max_depth], 'mode': 'lines', 'name': 'Model Mean/STD', 'opacity':0.25,  #  Mean and STD
                  'error_x': dict(type='data', array=np.std(data[:, loc_id, 0:max_depth], axis=0), visible=True), },
-                {'x': np.mean(nn_predictions[loc_id, :, 0:max_depth], axis=0), 'y': self.depths_int[0:max_depth], 'mode': 'lines', 'name': 'NN Mean/STD', 'opacity':0.5,  #  Mean and STD
+                {'x': np.mean(nn_predictions[loc_id, :, 0:max_depth], axis=0), 'y': self.depths_int[0:max_depth], 'mode': 'lines', 'name': 'NN Mean/STD', 'opacity':0.25,  #  Mean and STD
                  'error_x': dict(type='data', array=np.std(nn_predictions[loc_id, :, 0:max_depth], axis=0), visible=True), },
                 {'x': data[day_year, loc_id, 0:max_depth], 'y': self.depths_int[0:max_depth], 'mode': 'markers', 'name': 'Model'}, # Model
                 {'x': nn_predictions[loc_id, day_year, 0:max_depth], 'y': self.depths_int[0:max_depth], 'mode': 'markers', 'name': 'NN'}, # NN

@@ -132,7 +132,10 @@ if __name__ == '__main__':
     # ======================= Multiple training =======================
     # normalize = [True, False]
     normalize = [True]
-    rand_loc = [2, 4, 100, 200, 400, 600, 636]
+    # rand_loc = [2, 4, 100, 200, 400, 600, 636]
+    # rand_loc = [100, 200, 400, 600, 636]
+    rand_loc = [100, 200]
+    # rand_loc = [2]
     DEPTH_SIZE = 78
     hid_layers = 3  # Number of hidden layers
 
@@ -141,8 +144,11 @@ if __name__ == '__main__':
             # How big is the hidden layers are limitted by around ~1170 for the GPU
             hid_lay_size = int(DEPTH_SIZE*min(RAND_LOC, 15))
             np.random.seed(SEED)  # THIS IS VERY IMPORTANT BECAUSE WE NEED IT SO THAT THE NETWORKS ARE TRAINED AND TESTED WITH THE SAME LOCATIONS
-            _run_name = F"GoMLoc_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
-            # _run_name = F"ForceMono_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
+            # _run_name = F"GoMLocMeanSSTAndDerivativeForTime_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
+            _run_name = F"GoMLoc_GRADIENT_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
+            # _run_name = F"GoMLocDateDirectly_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
+            # _run_name = F"GoMLocSineDate_{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
+            # _run_name = F"GoMLocNoDateInfo{RAND_LOC:05d}_hidcells_{hid_lay_size}_hidlay_{hid_layers}_NORM_{str(NORMALIZE)}_SEED_{str(SEED)}_Adam"
             output_size = RAND_LOC*DEPTH_SIZE*2  # We want to output all the profiles depths for temperature and salinity
 
             if RAND_LOC == MAX_LOCATION: # Here we select the locations we want to use
@@ -157,8 +163,8 @@ if __name__ == '__main__':
             config[ProjTrainingParams.normalize] = NORMALIZE
             config[TrainingParams.config_name] = _run_name
             # # ====================== Using custom loss ====================
-            myloss = force_monotonic_density_loss(config)
-            config[TrainingParams.loss_function] = myloss
-            config[TrainingParams.evaluation_metrics] = [myloss]  # Metrics to show in tensor flow in the training
+            # myloss = force_monotonic_density_loss(config)
+            # config[TrainingParams.loss_function] = myloss
+            # config[TrainingParams.evaluation_metrics] = [myloss]  # Metrics to show in tensor flow in the training
             # ====================== Using custom loss ====================
             doTraining(config)

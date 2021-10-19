@@ -34,10 +34,10 @@ summary_file = "/data/SubsurfaceFields/Output/SUMMARY/summary.csv"
 df = pd.read_csv(summary_file)
 # Adam [True] 2, 6, 10, 14, 18, 22
 # Adam [False] 0, 4, 8, 12, 16, 20
-model = df.iloc[MODELNUMBER]  # Here we identify which model we want to use
-port = 80MODELPORT
-# model = df.iloc[0]  # Here we identify which model we want to use
-# port = 8082
+# model = df.iloc[MODELNUMBER]  # Here we identify which model we want to use
+# port = 80MODELPORT
+model = df.iloc[10]  # Here we identify which model we want to use
+port = 8080
 
 # ======== Updating the config info  ==========
 # -------- Setting locations an dnetwork parameters ----
@@ -163,6 +163,10 @@ app.layout = dbc.Container([
             dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_d, 78, "RMSE by depth Density"), id="id-error-d"), width=2),
             dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByYearPlot(rmse_by_dyear_t, 0, "RMSE by Day of year Temperature", deg_txt), id="id-errorbyday-t"), width=3),
             dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByYearPlot(rmse_by_dyear_s, 0, "RMSE by Day of year Salinity"), id="id-errorbyday-s"), width=3),
+        ]),
+        dbc.Row( [
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_t, 78, "Analyzing Temperature by location", "C"), id="id-analyze-t"), width=2),
+            dbc.Col(dcc.Graph(figure=MyFigObj.getErrorByDepth(rmse_by_depth_t, 78, "Analyzing Salinity by location", "C"), id="id-analyze-s"), width=2),
         ]),
 ], fluid=True)
 

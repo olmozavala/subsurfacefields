@@ -20,6 +20,12 @@ def data_gen_from_preproc(config, ssh, temp_profile, saln_profile, dyear, ids):
     np.nan_to_num(temp_profile, copy=False, nan=0.0)
     np.nan_to_num(saln_profile, copy=False, nan=0.0)
 
+    mean_dyear = np.array([24.46995,24.19154,24.02029,23.85625,23.82423,23.79793,23.85859,24.05513,24.32891,24.60809,24.99460,25.53948,26.12239,26.70698,27.36962,27.83087,28.27534,28.64029,28.94974,29.15493,29.30180,29.41270,29.47937,29.45516,29.35265,29.13019,28.83846,28.40806,27.94954,27.49181,27.01199,26.51777,26.10526,25.69155,25.31612,24.90690])
+    mean_dyear_dt = np.zeros(len(mean_dyear))
+    mean_dyear_dt[1:] = mean_dyear[1:] - mean_dyear[:-1]
+    mean_dyear_dt[0] = mean_dyear[0] - mean_dyear[-1]
+    print(mean_dyear_dt)
+
     while True:
         try:
             succ_attempts = 0
@@ -33,10 +39,16 @@ def data_gen_from_preproc(config, ssh, temp_profile, saln_profile, dyear, ids):
                     np.random.shuffle(ids) # We shuffle the folders every time we have tested all the examples
 
                 c_id = ids[ex_id]
+                dyear_idx = int(dyear[c_id]/10 - 1) # This index should go from 0 to 35
                 try:
-                    tx = np.concatenate((temp_profile[c_id,:,0].flatten(), ssh[c_id, :].flatten(), [np.sin(dyear[c_id]*np.pi/365)]))
-                    # tx = np.concatenate((ssh[c_id, :].flatten(), temp_profile[c_id,:,0].flatten(), [0]))
-                    ty = np.concatenate((temp_profile[c_id,:,:].flatten(), saln_profile[c_id,:,:].flatten()))
+                    # tx = np.concatenate((temp_profile[c_id,:,0].flatten(), ssh[c_id, :].flatten(), [mean_dyear[dyear_idx]], [mean_dyear_dt[dyear_idx]]))
+                    # tx = np.concatenate((temp_profile[c_id,:,0].flatten(), ssh[c_id, :].flatten(), [np.sin(dyear[c_id]*np.pi/365)]))
+                    # tx = np.concatenate((temp_profile[c_id,:,0].flatten(), ssh[c_id, :].flatten(), [dyear[c_id]]))
+                    # tx = np.concatenate((temp_profile[c_id,:,0].flatten(), ssh[c_id, :].flatten(), [0]))
+                    tx = np.concatenate((temp_profile[c_id,:,0].flatten(), ssh[c_id, :].flatten(), [mean_dyear_dt[dyear_idx]]))
+                    # tx = np.concatenate((temp_profile[c_id,:,0].flatten(), temp_profile[c_id,:,0].flatten(), [dyear[c_id]]))
+
+                    ty = np.concatenate((temp_profile[c_id,:,:].flatten(), saln_profile[c_id, :, :].flatten()))
                     # Just for debugging
                     # t = temp_profile[c_id,:,:][0]
                     # t[t==0] = np.nan

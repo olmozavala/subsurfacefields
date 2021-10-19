@@ -90,14 +90,15 @@ def force_monotonic_density_loss(config):
             #     tf.print(F"&&&&&&&&&&&&")
             #     tf.print(diff[j])
 
-        y_true_f = K.flatten(y_true)
-        y_pred_f = K.flatten(y_pred)
-        rmse = tf.math.reduce_mean(tf.math.squared_difference(y_true_f, y_pred_f))
+        # y_true_f = K.flatten(y_true)
+        # y_pred_f = K.flatten(y_pred)
+        # rmse = tf.math.reduce_mean(tf.math.squared_difference(y_true_f, y_pred_f))
         # tf.print(F"RMSE:")
         # tf.print(rmse)
         # tf.print(F"ERROR:")
         # tf.print(error_mon)
-        return rmse + error_mon*10
+        # return rmse + error_mon
+        return error_mon
         # return rmse
 
     return loss
