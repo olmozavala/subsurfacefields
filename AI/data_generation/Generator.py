@@ -1,8 +1,74 @@
 import numpy as np
-from constants.AI_params import TrainingParams
+from ai_common.constants.AI_params import TrainingParams, ModelParams, AiModels
 from constants_proj.AI_proj_params import ProjTrainingParams
 from ExtraUtils.VizUtilsProj import draw_profile
 from os.path import join
+# For this project
+from io_project.read_utils import generateXY
+
+
+
+def data_gen_3d_from_preproc(config, files, ids):
+    """
+    This generator should generate X and Y for a CNN
+    :param path:
+    :param file_names:
+    :return:
+    """
+    ex_id = -1
+    np.random.shuffle(ids)
+    batch_size = config[TrainingParams.batch_size]
+    input_folder = config[ProjTrainingParams.input_folder_preproc]
+    dims = config[ModelParams.INPUT_SIZE]
+    tot_ids = len(ids)
+
+    while True:
+        c_batch = 0
+        # Starting with lower resolution
+        # X = np.zeros((batch_size, dims[0], dims[1], 2), dtype=np.float32)
+        # Y = np.zeros((batch_size, dims[0]*inc_res_factor, dims[1]*inc_res_factor, 2), dtype=np.float32)
+        # Starting with final resolution
+        X = np.zeros((batch_size, dims[0], dims[1], 1), dtype=np.float32)
+        Y = np.zeros((batch_size, dims[0], dims[1], 1), dtype=np.float32)
+        try:
+            # *********************** Reading data **************************
+            while c_batch < batch_size:
+                # These lines are for sequential selection
+                if curr_idx < (len(files) - 1):
+                    curr_idx += 1
+                else:
+                    curr_idx = 0
+                    np.random.shuffle(files) # We shuffle the folders every time we have tested all the examples
+                c_file = files[curr_idx]
+                u_red, v_red, u, v = generateXY(join(input_folder,c_file), config)
+                X[c_batch,:,:,0] = u_red
+                X[c_batch,:,:,1] = v_red
+
+                Y[c_batch,:,:,0] = u
+                Y[c_batch,:,:,1] = v
+                c_batch += 1
+                # # --------------------- For debugging only ----------------------------
+                # from img_viz.eoa_viz import EOAImageVisualizer
+                # import cmocean
+                # output_imgs_folder="/data/DARPA/SuperResolution/Training/imgs"
+                # img_viz_ob = EOAImageVisualizer(output_folder=output_imgs_folder, disp_images=False,
+                #                                 mincbar=[-2, -.1, -2, -.1],
+                #                                 maxcbar=[2, .1, 2, .1])
+                #
+                # img_viz_ob.plot_2d_data_np_raw([X[0,:,:,0],  Y[0,:,:,0], X[0,:,:,1], Y[0,:,:,1]],
+                #                        var_names=[F'U {X.shape}', F'UY {Y.shape}', F'V nn {X.shape}', F'VY nn {Y.shape}'],
+                #                        file_name=c_file.replace('.nc','png'),
+                #                        title=F"Training {c_file}",
+                #                        cmap=cmocean.cm.delta, cols_per_row=2)
+
+            # Remove nans and yield output
+            X = np.nan_to_num(X, nan=0)
+            Y = np.nan_to_num(Y, nan=0)
+
+            yield X, Y   # (batch, dims[0], dims[1], 2)
+
+        except Exception as e:
+            print("----- Not able to generate for: ", curr_idx, " ERROR: ", str(e))
 
 
 def data_gen_from_preproc(config, ssh, temp_profile, saln_profile, dyear, ids):

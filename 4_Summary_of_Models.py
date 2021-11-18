@@ -5,7 +5,7 @@ import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 
-from config.MainConfig import get_training_2d
+from config.MainConfigByProfiles import get_training_2d
 from constants.AI_params import TrainingParams, ModelParams
 from constants_proj.AI_proj_params import ProjTrainingParams
 from img_viz.common import create_folder

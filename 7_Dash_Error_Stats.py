@@ -13,7 +13,7 @@ import plotly.express as px
 import numpy as np
 
 import pandas as pd
-from config.MainConfig import get_prediction_params
+from config.MainConfigByProfiles import get_prediction_params
 from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, MAX_LOCATION
 from constants.AI_params import TrainingParams, ModelParams
 from img_viz.common import create_folder

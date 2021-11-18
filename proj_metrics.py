@@ -120,7 +120,7 @@ def only_ocean_mse(y_true, y_pred, smooth=1.0):
 # ========== Just for testing ============
 if __name__ == '__main__':
 
-    from config.MainConfig import get_training_2d
+    from config.MainConfigByProfiles import get_training_2d
     from io_project.read_utils import get_all_profiles, normDenormData
 
     config = get_training_2d()

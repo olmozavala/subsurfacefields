@@ -3,7 +3,7 @@ from tensorflow.keras.layers import LeakyReLU
 import tensorflow.keras.backend as K
 from io_project.read_utils import generateXandY
 from constants.AI_params import *
-from config.MainConfig import get_prediction_params
+from config.MainConfigByProfiles import get_prediction_params
 from models.modelSelector import select_2d_model
 from models.model_viz import print_layer_names, plot_intermediate_2dcnn_feature_map, plot_cnn_filters_by_layer
 from constants.AI_params import TrainingParams

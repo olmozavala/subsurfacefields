@@ -1,7 +1,8 @@
 from tensorflow.keras.layers import *
-import models.modelBuilder2D as model_builder_2d
 from tensorflow.keras.models import Model
-from constants.AI_params import ModelParams
+# Common
+import ai_common.models.modelBuilder2D as model_builder_2d
+from ai_common.constants.AI_params import ModelParams
 
 
 def simpleSimplest(model_params):
@@ -14,7 +15,6 @@ def simpleSimplest(model_params):
 
     inputs = Input((nn_input_size[0], nn_input_size[1], nn_input_size[2]))
 
-    # 1
     conv1 = Conv2D(num_filters, (filter_size, filter_size), padding='same', activation=activation)(inputs)
     # last
     last_layer = Conv2D(number_output_filters, (1, 1), activation=last_activation)(conv1)

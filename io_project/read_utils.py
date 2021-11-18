@@ -7,9 +7,12 @@ from os.path import join, isfile
 import xarray as xr
 import os
 import numpy as np
+import cv2
 from datetime import date
 from ExtraUtils.VizUtilsProj import draw_profile
 import re
+# Common
+from ai_common.constants.AI_params import TrainingParams, ModelParams, AiModels
 
 def get_all_profiles(input_folder, all_loc, time_steps=np.arange(1548)):
     """
@@ -112,3 +115,16 @@ def normDenormData(stats_file, t, s, normalize=True, loc="all"):
 
     return tout, sout
 
+def generateXY(input_file, config):
+    dims = config[ModelParams.INPUT_SIZE]
+    """
+    Generates the X,Y from the input file
+    :param input_file:
+    :return:
+    """
+    ds = xr.load_dataset(input_file)
+    # ------------------------------ ORIGINAL VERSION ---------------------------------
+    X = 1
+    Y = 1
+
+    return X, Y

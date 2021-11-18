@@ -8,7 +8,7 @@ import pandas as pd
 import time
 import trainingutils as utilsNN
 
-from config.MainConfig import get_prediction_params
+from config.MainConfigByProfiles import get_prediction_params
 from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, MAX_LOCATION, SEED
 from constants.AI_params import TrainingParams, ModelParams
 from img_viz.common import create_folder

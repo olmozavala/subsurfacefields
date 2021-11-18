@@ -1,3 +1,4 @@
+# External
 from tensorflow.keras.optimizers import Adam, SGD
 import tensorflow.keras.metrics as metrics
 import tensorflow.keras.losses as losses
@@ -5,13 +6,14 @@ from os.path import join
 import os
 import tensorflow as tf
 import numpy as np
-
+# Common
+from ai_common.constants.AI_params import TrainingParams, ModelParams, AiModels
+# This project
 from constants_proj.AI_proj_params import *
-from constants.AI_params import TrainingParams, ModelParams, AiModels
-from img_viz.constants import PlotMode
 
 # ----------------------------- UM -----------------------------------
-_preproc_folder = "/data/SubsurfaceFields/PreprocGoM"
+# _preproc_folder = "/data/SubsurfaceFields/PreprocGoM"
+_preproc_folder = "/data/SubsurfaceFields/PreprocGoM3D"
 _output_folder = "/data/SubsurfaceFields/Output"  # Where to save everything
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Decide which GPU to use to execute the code
@@ -36,7 +38,7 @@ else:
 
 def get_preproc_config():
     model_config = {
-        PreprocParams.input_folder_raw: "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile",
+        PreprocParams.input_folder_raw: "/nexsan/people/xbxu/hycom/GLBb0.08/profile",
         # PreprocParams.input_folder_raw: "/data/SubsurfaceFields/Input",
         PreprocParams.imgs_output_folder: join(_preproc_folder, "imgs"),
         PreprocParams.output_folder: _preproc_folder,

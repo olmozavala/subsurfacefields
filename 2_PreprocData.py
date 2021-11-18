@@ -1,27 +1,62 @@
+# External
 from multiprocessing import Pool
-from constants_proj.AI_proj_params import PreprocParams, ProjTrainingParams
 import matplotlib.pyplot as plt
-from config.MainConfig import get_preproc_config
-from inout_common.io_common import create_folder
+import os
 from os.path import join
 import skimage.io as io
 from PIL import Image
 import xarray as xr
 import numpy as np
 import pandas as pd
-from metrics_proj.isop_metrics import swstate
-import os
+# Common
 from ExtraUtils.VizUtilsProj import draw_profile
+from ai_common.inout_common.io_common import create_folder
+# This project
+from constants_proj.AI_proj_params import PreprocParams, ProjTrainingParams
+from config.MainConfig3D import get_preproc_config
+from metrics_proj.isop_metrics import swstate
 
 NUM_PROC = 1
 
-def main():
-    # ----------- Parallel -------
-    # p = Pool(NUM_PROC)
-    # p.map(PreprocDataRandomSubsample(), range(NUM_PROC))
-    # PreprocDataRandomSubsample(0)
-    # PreprocDataBBOXSubsample(0)
-    computeMeanSTD()
+def PreprocDataBBOXSubsample3D(proc_id):
+    """
+    From the BIG profiles files, it generates individual files for locations surrounding a BBOX
+    :param proc_id:
+    :return:
+    """
+    np.random.seed(0)
+
+    config = get_preproc_config()
+    input_folder = config[PreprocParams.input_folder_raw]
+    output_folder = config[PreprocParams.output_folder]
+    bbox = config[ProjTrainingParams.bbox]
+
+    create_folder(output_folder)
+
+    file_names = os.listdir(input_folder)
+    file_names.sort()
+    file_paths = [join(input_folder, c_file) for c_file in file_names]
+
+    # ==================== Iterate over files
+    print(F"Reading data and selecting locations with BBOX: {bbox} ......")
+    for idx_file, c_file in enumerate(file_names):
+        ds = xr.open_dataset(file_paths[idx_file])
+        bbox = [17.0, 32.5, 360.0-98.0, 360.0-74.5]  # Min max lat and min max lon
+        lat_idxs = np.logical_and(ds.latitude>= bbox[0], ds.latitude<= bbox[1])
+        lon_idxs = np.logical_and(ds.longitude>= bbox[2], ds.longitude <= bbox[3])
+
+        lats = ds.latitude[lat_idxs].values
+        lons = ds.longitude[lon_idxs].values
+
+        # # Here we subsample the dataset with the selected ids (subsampled locations)
+        # subds_lat = ds.sel(latitude=lat_idxs.squeeze())
+        # subds_lonlat = subds_lat.sel(longitude=lon_idxs.squeeze())
+        subds_lat = ds.sel(latitude=lats)
+        subds_lonlat = subds_lat.sel(longitude=lons)
+        output_file = join(output_folder, c_file)
+        subds_lonlat.to_netcdf(output_file)
+        subds_lonlat.close()
+        ds.close()
 
 
 def PreprocDataBBOXSubsample(proc_id):
@@ -253,4 +288,9 @@ def computeMeanSTD():
     print("Done!")
 
 if __name__ == '__main__':
-    main()
+    # ----------- Parallel -------
+    # p = Pool(NUM_PROC)
+    # p.map(PreprocDataRandomSubsample(), range(NUM_PROC))
+    # PreprocDataRandomSubsample(0)
+    PreprocDataBBOXSubsample3D(0)
+    # computeMeanSTD()

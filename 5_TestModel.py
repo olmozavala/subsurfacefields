@@ -9,7 +9,7 @@ import time
 import matplotlib.pyplot as plt
 import trainingutils as utilsNN
 
-from config.MainConfig import get_prediction_params
+from config.MainConfigByProfiles import get_prediction_params
 from constants_proj.AI_proj_params import PredictionParams, ProjTrainingParams, PreprocParams, MAX_LOCATION
 from models_proj.models import *
 from constants.AI_params import TrainingParams, ModelParams, AiModels
