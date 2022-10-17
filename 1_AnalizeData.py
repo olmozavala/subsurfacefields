@@ -17,11 +17,6 @@ def create_folder(output_folder):
     if not(os.path.exists(output_folder)):
         os.makedirs(output_folder)
 
-def main():
-    # ----------- Parallel -------
-    img_generation_all()
-    # img_generation_3D()
-
 def data_summary(ds):
     print("------------- Data summary ---------------------")
     print(ds.head())
@@ -125,16 +120,12 @@ def plot5DegDataFiles(file_names, input_folder, output_folder, file_prefix=""):
 
     print("Done!")
 
-def img_generation_3D():
+def img_generation_3D(input_folder):
     """
     Makes images of the available data (Free run, DA and Observations)
     :param proc_id:
     :return:
     """
-    input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile/3d"
-    output_folder = "/data/SubsurfaceFields/PreprocBK/imgs/3d"
-    create_folder(output_folder)
-
     print("Reading files...")
     all_files = os.listdir(input_folder)
     for c_file in all_files:
@@ -146,17 +137,12 @@ def img_generation_3D():
         ds.saln[0,0,:,:].plot(figsize=(10,5))
         plt.show()
 
-def img_generation_all():
+def img_generation_all(input_folder, output_folder):
     """
     Makes images of the available data (Free run, DA and Observations)
     :param proc_id:
     :return:
     """
-    _preproc_folder = "/data/SubsurfaceFields/Preproc"
-    # input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile"
-    input_folder = "/data/SubsurfaceFields/Input"
-    output_folder = join(_preproc_folder, "imgs")
-    # output_folder = "/home/data/Subsurface/imgs"
     create_folder(output_folder)
 
     print("Reading files...")
@@ -171,7 +157,6 @@ def img_generation_all():
     plotSparseDataFiles(sparse_files, input_folder, output_folder)
     print("Plotting 1/2 Deg files...")
     plot5DegDataFiles(five_deg_files, input_folder, output_folder, "5Deg")
-    # plot5DegDataFiles(sparse_files, input_folder, output_folder, "5Deg")
     print("Done!")
 
 def stringToArray(st_orig):
@@ -180,14 +165,13 @@ def stringToArray(st_orig):
     str_array = st_orig.replace("[ ","").replace("[","").replace("]","").replace("\n","").split(" ")
     return np.array([float(x) if x != "nan" else np.nan for x in str_array])
 
-def plot_obtained_stats():
+def plot_obtained_stats(stats_file):
     all_depths = np.array([0.0,2.0,4.0,6.0,8.0,10.0,15.0,20.0,25.0,30.0,35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,85.0,90.0,95.0,100.0,110.0,120.0,130.0,140.0,150.0,160.0,170.0,180.0,190.0,200.0,220.0,240.0,260.0,280.0,300.0,350.0,400.0,500.0,600.0,700.0,800.0,900.0,1000.0,1100.0,1200.0,1300.0,1400.0,1500.0,1600.0,1800.0,2000.0,2200.0,2400.0,2600.0,2800.0,3000.0,3200.0,3400.0,3600.0,3800.0,4000.0,4200.0,4400.0,4600.0,4800.0,5000.0,5200.0,5400.0,5600.0,5800.0,6000.0,6200.0,6400.0,6600.0])
-    stats_file = "/data/SubsurfaceFields/PreprocGoM/MEAN_STD_by_loc.csv"
     df = pd.read_csv(stats_file)
     loc = np.arange(0,500)  # which locations to plot
     np.random.shuffle(loc)
     max_depth = 50
-    for c_loc in loc:
+    for c_loc in loc[0:3]:
         mean_t= stringToArray(df.loc[c_loc, "mean_temp"])
         mean_s = stringToArray(df.loc[c_loc, "mean_saln"])
         mean_d = stringToArray(df.loc[c_loc, "mean_sigma"])
@@ -209,26 +193,40 @@ def plot_obtained_stats():
         ax1 = plt.subplot(1,3,1)
         ax1.errorbar(t, all_depths[:c_max_depth], xerr=std_t, c='r')
         ax1.set_xlabel('Temp')
+        ax1.set_title('Temp')
+        ax1.set_ylabel('Depth mts')
         ax1.invert_yaxis()
         # -------------------- Salinity
         ax1 = plt.subplot(1,3,2)
         ax1.errorbar(s, all_depths[:c_max_depth], xerr=std_s, c='g')
+        ax1.set_title('Salinity')
         ax1.set_xlabel('Salinity')
         ax1.invert_yaxis()
         # -------------------- Density
         ax1 = plt.subplot(1,3,3)
         ax1.errorbar(d, all_depths[:c_max_depth], xerr=std_d, c='b')
+        ax1.set_title('Density')
         ax1.set_xlabel('Density')
-        # ax1.set_xlim([0,40])
         ax1.invert_yaxis()
+        plt.suptitle(f"Location {c_loc}")
         plt.show()
 
-
-
-
 if __name__ == '__main__':
-    # main()
-    plot_obtained_stats()
+
+    # input_folder = "/data/SubsurfaceFields/Input"
+    # output_folder = "/data/SubsurfaceFields/Preproc/imgs"
+    # input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile"
+    # output_folder = "/home/data/Subsurface/imgs"
+    # img_generation_all(input_folder, output_folder)
+
+    # ----------- 3D data netcdfs ------------
+    # input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile/3d"
+    input_folder = "/home/olmozavala/Dropbox/MyProjects/EOAS/COAPS/SubsurfaceFields/test_data_gordon/profiles/"
+    img_generation_3D(input_folder)
+
+    # ----------- Plot STD data obtained
+    # stats_file = "/data/SubsurfaceFields/PreprocGoM/MEAN_STD_by_loc.csv"
+    # plot_obtained_stats(stats_file)
 
 ##
 

@@ -74,18 +74,18 @@ def _draw_profile(t, s, depth, ax1):
     ax2.tick_params(axis='x', labelcolor=s_color)
 
 
-def draw_profile(t, s, depth, title, output_file = ""):
-    fig = plt.figure(figsize=(20,10))
+def draw_profile(t, s, depth, title, output_file="", display=True):
+    fig = plt.figure(figsize=(10,5))
     ax1 = fig.add_subplot(111)
     plt.title(title)
 
     _draw_profile(t, s, depth, ax1)
 
-    if output_file != "":
-        plt.savefig(output_file, bbox_inches='tight')
-        plt.close()
-    else:
+    plt.savefig(output_file, bbox_inches='tight')
+    if display:
         plt.show()
+    else:
+        plt.close()
 
 def draw_profiles_comparison(t, s, nn_t, nn_s, depth, title, output_file = ""):
     fig = plt.figure(figsize=(40,10))
