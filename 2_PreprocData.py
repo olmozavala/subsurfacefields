@@ -146,9 +146,8 @@ def generalPreproc(lats, lons, tot_locs, n_depths, file_names, input_folder, out
     dyear = np.zeros((tot_time_steps))
     start_year = 1963
 
-
-    for i, c_file in enumerate(file_names):
-    # for i, c_file in enumerate(file_names[0:1]):
+    # for i, c_file in enumerate(file_names):
+    for i, c_file in enumerate(file_names[0:1]):
         print(F"--------------------- Preprocessing file {c_file} year {start_year+i}")
         ds = xr.open_dataset(join(input_folder, c_file))
 
@@ -197,11 +196,11 @@ def generalPreproc(lats, lons, tot_locs, n_depths, file_names, input_folder, out
 
     dsout = xr.Dataset(
         {
-            "t": (('id', 'time', 'depth'), temp),
-            "s": (('id', 'time', 'depth'), saln),
-            "ssh": (('id', 'time'), sshout),
-            "year": (('time'), da_years),
-            "dyear": (('time'), da_dyear),
+            "t": (('id', 'time', 'depth'), temp.values),
+            "s": (('id', 'time', 'depth'), saln.values),
+            "ssh": (('id', 'time'), sshout.values),
+            "year": (('time'), da_years.values),
+            "dyear": (('time'), da_dyear.values),
         },
         {"time": times, "lat": lats, "lon": lons, "id": id_locs, "depth":depths}
     )
