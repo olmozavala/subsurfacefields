@@ -8,18 +8,18 @@ import numpy as np
 
 from constants_proj.AI_proj_params import *
 from constants.AI_params import TrainingParams, ModelParams, AiModels
-from img_viz.constants import PlotMode
+from viz_utils.constants import PlotMode
 
 # ----------------------------- UM -----------------------------------
-_preproc_folder = "/data/SubsurfaceFields/PreprocGoM"
-_output_folder = "/data/SubsurfaceFields/Output"  # Where to save everything
+_preproc_folder = "/Net/work/ozavala/SubSurfaceFields/PreprocGoM"
+_output_folder = "/Net/work/ozavala/SubSurfaceFields/PreprocGoM/Output"  # Where to save everything
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Decide which GPU to use to execute the code
 # tf.config.experimental.VirtualDeviceConfiguration(memory_limit=12288)
 tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2000)
 
 NORMALIZE = False
-RAND_LOC = 3 # How many random locations to use
+RAND_LOC = 3  # How many random locations to use
 DEPTH_SIZE = 78
 # How big is the hidden layers are limitted by around ~1170 for the GPU
 HID_LAY_SIZE = int(DEPTH_SIZE*min(RAND_LOC,15))
@@ -36,8 +36,7 @@ else:
 
 def get_preproc_config():
     model_config = {
-        PreprocParams.input_folder_raw: "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile",
-        # PreprocParams.input_folder_raw: "/data/SubsurfaceFields/Input",
+        PreprocParams.input_folder_raw: "/nexsan/people/xbxu/hycom/GLBb0.08/profile",
         PreprocParams.imgs_output_folder: join(_preproc_folder, "imgs"),
         PreprocParams.output_folder: _preproc_folder,
         ProjTrainingParams.locations: MAX_LOCATION,

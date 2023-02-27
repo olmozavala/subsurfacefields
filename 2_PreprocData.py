@@ -1,8 +1,13 @@
+import sys
+sys.path.append("ai_common/")
+sys.path.append("eoas_pyutils/")
+
 from multiprocessing import Pool
 from constants_proj.AI_proj_params import PreprocParams, ProjTrainingParams
 import matplotlib.pyplot as plt
 from config.MainConfig import get_preproc_config
-from inout_common.io_common import create_folder
+from io_utils.io_common import create_folder
+
 from os.path import join
 import skimage.io as io
 from PIL import Image
@@ -13,16 +18,7 @@ from metrics_proj.isop_metrics import swstate
 import os
 from ExtraUtils.VizUtilsProj import draw_profile
 
-NUM_PROC = 1
-
-def main():
-    # ----------- Parallel -------
-    # p = Pool(NUM_PROC)
-    # p.map(PreprocDataRandomSubsample(), range(NUM_PROC))
-    # PreprocDataRandomSubsample(0)
-    # PreprocDataBBOXSubsample(0)
-    computeMeanSTD()
-
+##
 
 def PreprocDataBBOXSubsample(proc_id):
     """
@@ -253,4 +249,11 @@ def computeMeanSTD():
     print("Done!")
 
 if __name__ == '__main__':
-    main()
+    NUM_PROC = 1
+    # ----------- Parallel -------
+    # p = Pool(NUM_PROC)
+    # p.map(PreprocDataRandomSubsample(), range(NUM_PROC))
+    # PreprocDataRandomSubsample(0)
+    # Generates a single training file called all_data.nc
+    PreprocDataBBOXSubsample(0)
+    # computeMeanSTD()

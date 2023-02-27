@@ -147,14 +147,14 @@ def img_generation_all(input_folder, output_folder):
 
     print("Reading files...")
     all_files = os.listdir(input_folder)
-    sparse_files = [x for x in all_files if "05deg" not in x]
-    five_deg_files = [x for x in all_files if "05deg" in x]
+    sparse_files = [x for x in all_files if "05deg" not in x and "test_" in x]
+    five_deg_files = [x for x in all_files if "05deg.nc" in x ]
 
     sparse_files.sort()
     five_deg_files.sort()
 
-    print("Plotting sparse data files...")
-    plotSparseDataFiles(sparse_files, input_folder, output_folder)
+    # print("Plotting sparse data files...")
+    # plotSparseDataFiles(sparse_files, input_folder, output_folder)
     print("Plotting 1/2 Deg files...")
     plot5DegDataFiles(five_deg_files, input_folder, output_folder, "5Deg")
     print("Done!")
@@ -215,18 +215,16 @@ if __name__ == '__main__':
 
     # input_folder = "/data/SubsurfaceFields/Input"
     # output_folder = "/data/SubsurfaceFields/Preproc/imgs"
-    # input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile"
-    # output_folder = "/home/data/Subsurface/imgs"
-    # img_generation_all(input_folder, output_folder)
+    input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile"
+    output_folder = "/Net/work/ozavala/SubSurfaceFields/PreprocGoM/imgs"
+
+    img_generation_all(input_folder, output_folder)
 
     # ----------- 3D data netcdfs ------------
-    # input_folder = "/data/COAPS_nexsan/people/xbxu/hycom/GLBb0.08/profile/3d"
-    input_folder = "/home/olmozavala/Dropbox/MyProjects/EOAS/COAPS/SubsurfaceFields/test_data_gordon/profiles/"
+    input_folder = "/nexsan/people/xbxu/hycom/GLBb0.08/profile/3d"
+    # input_folder = "/home/olmozavala/Dropbox/MyProjects/EOAS/COAPS/SubsurfaceFields/test_data_gordon/profiles/"
     img_generation_3D(input_folder)
 
-    # ----------- Plot STD data obtained
-    # stats_file = "/data/SubsurfaceFields/PreprocGoM/MEAN_STD_by_loc.csv"
+    # ----------- Plot STD data obtained (only after Preproc has generated the file)
+    # stats_file = "/Net/work/ozavala/SubSurfaceFields/PreprocGoM/MEAN_STD_by_loc.csv"
     # plot_obtained_stats(stats_file)
-
-##
-
